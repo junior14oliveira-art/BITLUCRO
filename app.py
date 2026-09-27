@@ -1381,7 +1381,7 @@ HTML_DASHBOARD = """
     function installPWA() {
       const isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       if (isIos) {
-        alert("📲 Como Instalar o BITLUCRO no iPhone (Safari):\n\n1. Toque no botão 'Compartilhar' (ícone de quadrado com seta para cima na barra inferior do Safari).\n2. Role para baixo e selecione 'Adicionar à Tela de Início'.\n3. Toque em 'Adicionar' no canto superior direito.\n\nPronto! O ícone do BITLUCRO aparecerá na tela inicial como um app nativo.");
+        alert("📲 Como Instalar o BITLUCRO no iPhone (Safari):\\n\\n1. Toque no botão 'Compartilhar' (ícone de quadrado com seta para cima no Safari).\\n2. Role para baixo e selecione 'Adicionar à Tela de Início'.\\n3. Toque em 'Adicionar' no canto superior direito.\\n\\nPronto! O ícone do BITLUCRO aparecerá na tela inicial como um app nativo.");
         return;
       }
       if (deferredPrompt) {
@@ -1394,7 +1394,7 @@ HTML_DASHBOARD = """
           deferredPrompt = null;
         });
       } else {
-        alert("📲 Instalar no Celular:\n\nToque no menu (três pontinhos) do seu navegador e escolha 'Instalar aplicativo' ou 'Adicionar à tela inicial'.");
+        alert("📲 Instalar no Celular:\\n\\nToque no menu (três pontinhos) do seu navegador e escolha 'Instalar aplicativo' ou 'Adicionar à tela inicial'.");
       }
     }
 
