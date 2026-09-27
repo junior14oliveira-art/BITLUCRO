@@ -33,6 +33,7 @@ JOURNAL_FILE = os.path.join(BASE_DIR, 'diario_spot_binance.md')
 
 from super_skill_brain import SuperSkillBrain
 from risk_manager import RiskManager
+from historical_market_analyzer import HistoricalMarketAnalyzer
 
 BINANCE_API_URL = "https://api.binance.com/api/v3"
 
@@ -55,6 +56,7 @@ class BinanceSpotPaperEngine:
     def __init__(self):
         self.brain = SuperSkillBrain()
         self.risk_manager = RiskManager(initial_capital=INITIAL_BANKROLL_BRL)
+        self.historical_analyzer = HistoricalMarketAnalyzer(TARGET_PAIRS)
         self.state = self.load_state()
         self.state["super_skill"] = self.brain.state
         self.running = True
@@ -305,6 +307,11 @@ class BinanceSpotPaperEngine:
             return
 
         print("\n🔍 Escaneando oportunidades em Velas de 1H nos pares Spot...")
+        
+        # 4. Atualiza inteligência histórica (500 velas)
+        hist_data = self.historical_analyzer.run_full_historical_analysis()
+        self.state["historical_analysis"] = hist_data.get("pairs", {})
+
         pair_studies = []
 
         for target in TARGET_PAIRS:
@@ -340,7 +347,13 @@ class BinanceSpotPaperEngine:
             print(f"   • {sym:<10}: Preço R$/$ {price:<10.2f} | RSI(1H): {rsi:<4.1f} | EMA9/21: {trend}")
 
             if (is_oversold or is_ema_bullish):
-                # Passa pelo Risk Manager antes de qualquer ordem
+                # 1. Filtro Histórico dos últimos 21 dias (Evita comprar no topo da resistência)
+                hist_ok, hist_reason = self.historical_analyzer.evaluate_entry_safety(sym)
+                if not hist_ok:
+                    print(f"   📊 [HISTÓRICO 500H]: {sym} bloqueado: {hist_reason}")
+                    continue
+
+                # 2. Passa pelo Risk Manager antes de qualquer ordem
                 allowed, risk_reason, risk_status = self.risk_manager.evaluate_order(self.state, sym, ORDER_SIZE_BRL)
                 if not allowed:
                     print(f"   🛡️ [RISK MANAGER]: Ordem de {sym} bloqueada: {risk_reason}")

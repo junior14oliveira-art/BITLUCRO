@@ -157,6 +157,12 @@ HTML_DASHBOARD = """
           <span id="skillBadge">Super Skill (Nv. 1)</span>
         </button>
 
+        <!-- Botão Histórico 500H (Backtest Autônomo) -->
+        <button onclick="toggleHistoryModal(true)" class="text-xs bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 border border-blue-500/30 font-bold px-2.5 py-1.5 rounded-lg flex items-center space-x-1.5 transition" title="Inteligência Histórica dos Últimos 21 Dias">
+          <i class="fa-solid fa-chart-line text-blue-400"></i>
+          <span>Histórico 500H</span>
+        </button>
+
         <!-- Botão Guia / FAQ (Heurística #10) -->
         <button onclick="toggleHelpModal(true)" class="hidden sm:flex text-xs bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/80 font-semibold px-2.5 py-1.5 rounded-lg items-center space-x-1 transition" title="Guia e Princípios de Operação">
           <i class="fa-solid fa-circle-question text-amber-400"></i>
@@ -520,6 +526,57 @@ HTML_DASHBOARD = """
   </div>
 
   <!-- ==========================================
+       MODAL INTELIGÊNCIA HISTÓRICA & BACKTEST 500 VELAS
+       ========================================== -->
+  <div id="historyModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-cardbg border border-blue-500/30 rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto custom-scroll">
+      <div class="flex items-center justify-between border-b border-bordercol pb-3">
+        <div class="flex items-center space-x-2.5 text-blue-400">
+          <i class="fa-solid fa-chart-line text-xl"></i>
+          <div>
+            <h3 class="text-base font-bold text-white">Inteligência Histórica das Moedas (500 Velas / 21 Dias)</h3>
+            <p class="text-[11px] text-slate-400">Backtest autônomo coletado diretamente da API oficial da Binance</p>
+          </div>
+        </div>
+        <button onclick="toggleHistoryModal(false)" class="text-slate-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-300 leading-relaxed bg-darkbg p-3 rounded-xl border border-slate-800">
+        💡 <b>Como o Robô Usa Esse Histórico:</b> O algoritmo avalia as últimas 500 horas de cada criptomoeda para identificar os suportes e resistências reais. <b>Ele bloqueia compras se a moeda estiver acima de 90% do topo histórico (evitando comprar na máxima)</b> e prioriza ativos com maior assertividade histórica do alvo de +2.0%!
+      </p>
+
+      <div class="overflow-x-auto custom-scroll">
+        <table class="w-full text-left text-xs min-w-[500px]">
+          <thead>
+            <tr class="border-b border-bordercol text-slate-400 uppercase text-[11px]">
+              <th class="py-2.5 px-3">Ativo</th>
+              <th class="py-2.5 px-3">Win Rate Histórico (+2%)</th>
+              <th class="py-2.5 px-3">Tempo Médio p/ Lucro</th>
+              <th class="py-2.5 px-3">Suporte (21D)</th>
+              <th class="py-2.5 px-3">Resistência (21D)</th>
+              <th class="py-2.5 px-3 text-right">Posição no Range</th>
+            </tr>
+          </thead>
+          <tbody id="historyPairsTable" class="divide-y divide-bordercol/60 font-medium">
+            <tr>
+              <td colspan="6" class="py-6 text-center text-slate-400">Carregando dados históricos da Binance...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pt-2 flex items-center justify-between border-t border-bordercol text-[11px] text-slate-400">
+        <span>Amostra: <b class="text-slate-200">500 velas de 1h por ativo</b></span>
+        <button onclick="toggleHistoryModal(false)" class="text-xs bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2 rounded-lg transition shadow">
+          Fechar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
        SCRIPTS FRONTEND (ATUALIZAÇÃO REATIVA & REGRAS NIELSEN)
        ========================================== -->
   <script>
@@ -540,6 +597,10 @@ HTML_DASHBOARD = """
 
     function toggleSkillModal(show) {
       document.getElementById('skillModal').classList.toggle('hidden', !show);
+    }
+
+    function toggleHistoryModal(show) {
+      document.getElementById('historyModal').classList.toggle('hidden', !show);
     }
 
     function confirmReset() {
@@ -717,6 +778,44 @@ HTML_DASHBOARD = """
           }
         }
 
+        // 6. Inteligência Histórica (500 Velas)
+        if (data.historical_analysis) {
+          const hMap = data.historical_analysis;
+          const hTable = document.getElementById('historyPairsTable');
+          const keys = Object.keys(hMap);
+          if (hTable && keys.length > 0) {
+            hTable.innerHTML = keys.map(k => {
+              const item = hMap[k];
+              const pos = item.range_position_pct || 50;
+              const posColor = pos < 50 ? 'bg-emerald-500' : (pos < 80 ? 'bg-amber-500' : 'bg-rose-500');
+              const posText = pos < 50 ? 'Zona de Suporte 🟢' : (pos < 80 ? 'Meio de Range 🟡' : 'Resistência 🛑');
+              return `
+                <tr class="hover:bg-slate-800/40 transition">
+                  <td class="py-2.5 px-3">
+                    <div class="font-bold text-white">${k}</div>
+                    <div class="text-[10px] text-slate-400">${item.name || ''}</div>
+                  </td>
+                  <td class="py-2.5 px-3 mono font-bold text-emerald-400">
+                    ${item.historical_win_rate_pct}% <span class="text-[10px] text-slate-400">(${item.wins_count}/${item.signals_tested})</span>
+                  </td>
+                  <td class="py-2.5 px-3 mono text-slate-300">~${item.avg_hours_to_tp}h</td>
+                  <td class="py-2.5 px-3 mono text-slate-300">R$/$ ${item.support_price}</td>
+                  <td class="py-2.5 px-3 mono text-slate-300">R$/$ ${item.resistance_price}</td>
+                  <td class="py-2.5 px-3 text-right">
+                    <div class="flex items-center justify-end gap-1.5">
+                      <span class="mono text-[11px] text-slate-300 font-bold">${pos}%</span>
+                      <div class="w-12 bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                        <div class="${posColor} h-full" style="width: ${pos}%"></div>
+                      </div>
+                    </div>
+                    <div class="text-[9px] text-slate-400">${posText}</div>
+                  </td>
+                </tr>
+              `;
+            }).join('');
+          }
+        }
+
       } catch (err) {
         console.error("Erro ao sincronizar dashboard:", err);
       }
@@ -763,6 +862,10 @@ def get_state():
 @app.route('/api/skill')
 def get_skill():
     return jsonify(engine.brain.state)
+
+@app.route('/api/historical')
+def get_historical():
+    return jsonify(engine.historical_analyzer.data)
 
 @app.route('/api/scan', methods=['POST'])
 def manual_scan():

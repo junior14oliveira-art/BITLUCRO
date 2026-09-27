@@ -1,0 +1,75 @@
+{
+  "last_updated": "26/09/2026 22:54:55",
+  "pairs": {
+    "SOLBRL": {
+      "candles_analyzed": 500,
+      "support_price": 494.7,
+      "resistance_price": 638.5,
+      "current_price": 631.2,
+      "range_position_pct": 94.9,
+      "historical_win_rate_pct": 71.6,
+      "signals_tested": 197,
+      "wins_count": 141,
+      "avg_hours_to_tp": 22.8,
+      "avg_hourly_volatility_pct": 0.85,
+      "status": "EXCELENTE",
+      "name": "Solana"
+    },
+    "BTCBRL": {
+      "candles_analyzed": 500,
+      "support_price": 387000.0,
+      "resistance_price": 447322.0,
+      "current_price": 439229.0,
+      "range_position_pct": 86.6,
+      "historical_win_rate_pct": 44.1,
+      "signals_tested": 170,
+      "wins_count": 75,
+      "avg_hours_to_tp": 23.5,
+      "avg_hourly_volatility_pct": 0.51,
+      "status": "MODERADO",
+      "name": "Bitcoin"
+    },
+    "ETHBRL": {
+      "candles_analyzed": 500,
+      "support_price": 12175.88,
+      "resistance_price": 14360.49,
+      "current_price": 14049.31,
+      "range_position_pct": 85.8,
+      "historical_win_rate_pct": 68.8,
+      "signals_tested": 157,
+      "wins_count": 108,
+      "avg_hours_to_tp": 25.7,
+      "avg_hourly_volatility_pct": 0.7,
+      "status": "BOM",
+      "name": "Ethereum"
+    },
+    "NEARUSDT": {
+      "candles_analyzed": 500,
+      "support_price": 2.204,
+      "resistance_price": 5.211,
+      "current_price": 5.101,
+      "range_position_pct": 96.3,
+      "historical_win_rate_pct": 98.6,
+      "signals_tested": 141,
+      "wins_count": 139,
+      "avg_hours_to_tp": 8.1,
+      "avg_hourly_volatility_pct": 2.63,
+      "status": "EXCELENTE",
+      "name": "NEAR"
+    },
+    "RENDERUSDT": {
+      "candles_analyzed": 500,
+      "support_price": 1.284,
+      "resistance_price": 2.064,
+      "current_price": 2.026,
+      "range_position_pct": 95.1,
+      "historical_win_rate_pct": 84.7,
+      "signals_tested": 150,
+      "wins_count": 127,
+      "avg_hours_to_tp": 15.9,
+      "avg_hourly_volatility_pct": 1.59,
+      "status": "EXCELENTE",
+      "name": "Render"
+    }
+  }
+}
