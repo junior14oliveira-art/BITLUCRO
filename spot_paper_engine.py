@@ -31,6 +31,9 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATE_FILE = os.path.join(BASE_DIR, 'spot_paper_state.json')
 JOURNAL_FILE = os.path.join(BASE_DIR, 'diario_spot_binance.md')
 
+from super_skill_brain import SuperSkillBrain
+from risk_manager import RiskManager
+
 BINANCE_API_URL = "https://api.binance.com/api/v3"
 
 # Configurações do Robô
@@ -50,7 +53,10 @@ TARGET_PAIRS = [
 
 class BinanceSpotPaperEngine:
     def __init__(self):
+        self.brain = SuperSkillBrain()
+        self.risk_manager = RiskManager(initial_capital=INITIAL_BANKROLL_BRL)
         self.state = self.load_state()
+        self.state["super_skill"] = self.brain.state
         self.running = True
 
     def load_state(self):
@@ -299,14 +305,10 @@ class BinanceSpotPaperEngine:
             return
 
         print("\n🔍 Escaneando oportunidades em Velas de 1H nos pares Spot...")
+        pair_studies = []
 
         for target in TARGET_PAIRS:
             sym = target["symbol"]
-
-            # Evita comprar o mesmo par se já tiver posição aberta nele
-            already_open = any(p["symbol"] == sym for p in self.state["open_positions"])
-            if already_open:
-                continue
 
             tech = self.fetch_candles_and_indicators(sym, interval=TIMEFRAME)
             if not tech:
@@ -316,15 +318,34 @@ class BinanceSpotPaperEngine:
             rsi = tech["rsi"]
             ema9 = tech["ema9"]
             ema21 = tech["ema21"]
+            trend = "ALTA ↗" if ema9 > ema21 else "CORREÇÃO ↘"
+
+            pair_studies.append({
+                "symbol": sym,
+                "name": target["name"],
+                "price": price,
+                "rsi": rsi,
+                "trend": trend
+            })
+
+            # Evita comprar o mesmo par se já tiver posição aberta nele
+            already_open = any(p["symbol"] == sym for p in self.state["open_positions"])
+            if already_open:
+                continue
 
             # GATILHO SPOT CONSERVADOR (Velas de 1 Hora):
-            # RSI sobrevendido em 1H (<= 45) OU Cruzamento de Média com vela compradora
             is_oversold = rsi <= 45
             is_ema_bullish = ema9 > ema21 and tech["is_bull_candle"]
 
-            print(f"   • {sym:<10}: Preço R$/$ {price:<10.2f} | RSI(1H): {rsi:<4.1f} | EMA9/21: {'ALTA ↗' if ema9 > ema21 else 'BAIXA ↘'}")
+            print(f"   • {sym:<10}: Preço R$/$ {price:<10.2f} | RSI(1H): {rsi:<4.1f} | EMA9/21: {trend}")
 
-            if (is_oversold or is_ema_bullish) and self.state["cash_balance_brl"] >= ORDER_SIZE_BRL:
+            if (is_oversold or is_ema_bullish):
+                # Passa pelo Risk Manager antes de qualquer ordem
+                allowed, risk_reason, risk_status = self.risk_manager.evaluate_order(self.state, sym, ORDER_SIZE_BRL)
+                if not allowed:
+                    print(f"   🛡️ [RISK MANAGER]: Ordem de {sym} bloqueada: {risk_reason}")
+                    continue
+
                 target_profit_price = price * (1 + (TAKE_PROFIT_PCT / 100.0))
                 
                 # Executa compra simulada a preço de mercado real da Binance
@@ -338,7 +359,7 @@ class BinanceSpotPaperEngine:
                     "stake_brl": ORDER_SIZE_BRL,
                     "current_price": price,
                     "current_pnl_pct": 0.0,
-                    "reason": f"RSI 1H ({rsi}) + Alinhamento EMA9/21"
+                    "reason": f"RSI 1H ({rsi}) + Alinhamento EMA9/21 ({trend})"
                 }
                 self.state["open_positions"].append(new_position)
                 print(f"\n🛒 [COMPRA EXECUTADA NO SPOT]: R$ {ORDER_SIZE_BRL:.2f} de {sym} a {price:.4f}!")
@@ -346,6 +367,9 @@ class BinanceSpotPaperEngine:
                 self.save_state()
                 break # Uma entrada por ciclo para diversificar
 
+        # Registra estudo na Super Skill Quantitativa
+        self.brain.record_market_study(pair_studies, self.state["last_macro_status"], self.state.get("closed_trades", []))
+        self.state["super_skill"] = self.brain.state
         self.save_state()
 
 if __name__ == '__main__':

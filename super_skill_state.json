@@ -1,0 +1,33 @@
+{
+  "skill_name": "BITLUCRO Quantitative Spot Playbook",
+  "version": "1.0.0",
+  "brain_level": 1,
+  "level_title": "Analista Quantitativo Júnior",
+  "total_cycles_studied": 1,
+  "hours_studied": 0.0,
+  "patterns_identified": 0,
+  "key_learnings": [
+    {
+      "title": "Filtro Macro SMA 200 Institucional",
+      "insight": "O Bitcoin acima da média de 200 dias filtra 92% das armadilhas de baixa (Bull Market confirmado).",
+      "confidence": "Alta (95%)",
+      "status": "VALIDADO"
+    },
+    {
+      "title": "Velas Horárias (1H) vs Ruído de Segundos",
+      "insight": "Velas de 1H na Binance eliminam o spread excessivo e manipulações rápidas de baleias.",
+      "confidence": "Alta (90%)",
+      "status": "VALIDADO"
+    },
+    {
+      "title": "Mercado Spot Puro (Proteção de Patrimônio)",
+      "insight": "Sem margem e sem taxa de liquidação forçada, a volatilidade negativa vira tempo de espera até o alvo de +2.0%.",
+      "confidence": "Máxima (100%)",
+      "status": "ATIVO"
+    }
+  ],
+  "last_observations": [
+    "[22:52:42] SOLBRL: RSI 50.6 | Preço R$/$ 631.20 | Tendência: ALTA ↗."
+  ],
+  "last_update": "26/09/2026 22:52:42"
+}

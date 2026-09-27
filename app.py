@@ -151,6 +151,12 @@ HTML_DASHBOARD = """
           <span>Escanear</span>
         </button>
 
+        <!-- Botão Super Skill (Aprendizado Contínuo) -->
+        <button onclick="toggleSkillModal(true)" class="text-xs bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold px-2.5 py-1.5 rounded-lg flex items-center space-x-1.5 transition" title="Super Skill & Caderno de Inteligência">
+          <i class="fa-solid fa-brain text-purple-400"></i>
+          <span id="skillBadge">Super Skill (Nv. 1)</span>
+        </button>
+
         <!-- Botão Guia / FAQ (Heurística #10) -->
         <button onclick="toggleHelpModal(true)" class="hidden sm:flex text-xs bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/80 font-semibold px-2.5 py-1.5 rounded-lg items-center space-x-1 transition" title="Guia e Princípios de Operação">
           <i class="fa-solid fa-circle-question text-amber-400"></i>
@@ -448,6 +454,72 @@ HTML_DASHBOARD = """
   </div>
 
   <!-- ==========================================
+       MODAL SUPER SKILL: CADERNO DE INTELIGÊNCIA QUANTITATIVA
+       ========================================== -->
+  <div id="skillModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-cardbg border border-purple-500/40 rounded-2xl max-w-xl w-full p-6 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto custom-scroll">
+      <div class="flex items-center justify-between border-b border-bordercol pb-3">
+        <div class="flex items-center space-x-2.5 text-purple-400">
+          <i class="fa-solid fa-brain text-xl"></i>
+          <div>
+            <h3 class="text-base font-bold text-white">Super Skill: Caderno de Inteligência</h3>
+            <p class="text-[11px] text-slate-400">Auto-aprendizado quantitativo com cotações oficiais da Binance</p>
+          </div>
+        </div>
+        <button onclick="toggleSkillModal(false)" class="text-slate-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Métricas da Super Skill -->
+      <div class="grid grid-cols-3 gap-2.5 text-center">
+        <div class="bg-darkbg p-3 rounded-xl border border-slate-800">
+          <div class="text-[10px] text-slate-400 font-medium">Nível do Robô</div>
+          <div class="text-sm font-black text-purple-400 mt-0.5" id="skillLevel">Nível 1</div>
+          <div class="text-[9px] text-slate-500" id="skillTitle">Analista Júnior</div>
+        </div>
+        <div class="bg-darkbg p-3 rounded-xl border border-slate-800">
+          <div class="text-[10px] text-slate-400 font-medium">Tempo Estudado</div>
+          <div class="text-sm font-black text-emerald-400 mt-0.5" id="skillHours">0.1h</div>
+          <div class="text-[9px] text-slate-500" id="skillCycles">0 ciclos</div>
+        </div>
+        <div class="bg-darkbg p-3 rounded-xl border border-slate-800">
+          <div class="text-[10px] text-slate-400 font-medium">Leis Consolidadas</div>
+          <div class="text-sm font-black text-amber-400 mt-0.5">3 Leis</div>
+          <div class="text-[9px] text-slate-500">Spot Protegido</div>
+        </div>
+      </div>
+
+      <!-- Lições e Padrões Aprendidos -->
+      <div class="space-y-2">
+        <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+          <i class="fa-solid fa-lightbulb text-amber-400"></i> Playbook & Lições Aprendidas
+        </h4>
+        <div id="skillLearningsList" class="space-y-2 text-xs">
+          <!-- Dinâmico -->
+        </div>
+      </div>
+
+      <!-- Leituras Técnicas Recentes -->
+      <div class="space-y-2">
+        <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+          <i class="fa-solid fa-chart-simple text-blue-400"></i> Leituras Técnicas Recentes
+        </h4>
+        <div id="skillObservationsList" class="bg-darkbg p-3 rounded-xl border border-slate-800 text-[11px] mono text-slate-300 space-y-1 max-h-32 overflow-y-auto custom-scroll">
+          <div>Carregando observações...</div>
+        </div>
+      </div>
+
+      <div class="pt-2 flex items-center justify-between border-t border-bordercol text-[11px] text-slate-400">
+        <span>Documento salvo: <b class="text-purple-300">SUPER_SKILL_APRENDIZADO.md</b></span>
+        <button onclick="toggleSkillModal(false)" class="text-xs bg-purple-600 hover:bg-purple-500 text-white font-bold px-4 py-2 rounded-lg transition shadow">
+          Fechar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
        SCRIPTS FRONTEND (ATUALIZAÇÃO REATIVA & REGRAS NIELSEN)
        ========================================== -->
   <script>
@@ -464,6 +536,10 @@ HTML_DASHBOARD = """
 
     function toggleHelpModal(show) {
       document.getElementById('helpModal').classList.toggle('hidden', !show);
+    }
+
+    function toggleSkillModal(show) {
+      document.getElementById('skillModal').classList.toggle('hidden', !show);
     }
 
     function confirmReset() {
@@ -607,6 +683,40 @@ HTML_DASHBOARD = """
           }).join('');
         }
 
+        // 5. Super Skill Brain
+        if (data.super_skill) {
+          const sk = data.super_skill;
+          const badge = document.getElementById('skillBadge');
+          if (badge) badge.innerText = `Super Skill (Nv. ${sk.brain_level || 1})`;
+          const lvlEl = document.getElementById('skillLevel');
+          if (lvlEl) lvlEl.innerText = `Nível ${sk.brain_level || 1}`;
+          const titleEl = document.getElementById('skillTitle');
+          if (titleEl) titleEl.innerText = sk.level_title || 'Analista Júnior';
+          const hrsEl = document.getElementById('skillHours');
+          if (hrsEl) hrsEl.innerText = `${sk.hours_studied || 0.1}h`;
+          const cycEl = document.getElementById('skillCycles');
+          if (cycEl) cycEl.innerText = `${sk.total_cycles_studied || 0} ciclos`;
+
+          const lList = document.getElementById('skillLearningsList');
+          if (lList && sk.key_learnings) {
+            lList.innerHTML = sk.key_learnings.map(k => `
+              <div class="bg-darkbg p-2.5 rounded-lg border border-slate-800">
+                <div class="flex items-center justify-between">
+                  <b class="text-white">${k.title}</b>
+                  <span class="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded font-bold">${k.status}</span>
+                </div>
+                <p class="text-slate-300 text-[11px] mt-1">${k.insight}</p>
+                <div class="text-[10px] text-amber-400 mt-1">Confiança: <b>${k.confidence}</b></div>
+              </div>
+            `).join('');
+          }
+
+          const obsList = document.getElementById('skillObservationsList');
+          if (obsList && sk.last_observations) {
+            obsList.innerHTML = sk.last_observations.map(o => `<div>${o}</div>`).join('') || '<div>Aguardando leituras...</div>';
+          }
+        }
+
       } catch (err) {
         console.error("Erro ao sincronizar dashboard:", err);
       }
@@ -646,7 +756,13 @@ def home():
 def get_state():
     state = engine.state.copy()
     state["activity_logs"] = activity_logs
+    if hasattr(engine, 'brain'):
+        state["super_skill"] = engine.brain.state
     return jsonify(state)
+
+@app.route('/api/skill')
+def get_skill():
+    return jsonify(engine.brain.state)
 
 @app.route('/api/scan', methods=['POST'])
 def manual_scan():
