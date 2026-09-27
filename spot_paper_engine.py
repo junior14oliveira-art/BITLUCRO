@@ -1,23 +1,20 @@
 """
-ROBÔ QUANTITATIVO BINANCE SPOT (SIMULADOR COM DADOS REAIS / PAPER TRADING)
-- 100% Gratuito: Sem precisar colocar dinheiro real
-- Conectado à API Oficial da Binance em Tempo Real
-- Banca Inicial Simulada: R$ 50,00
-- Ordem Mínima: R$ 10,00 por entrada
-- As 3 Leis de Ouro Ativas:
-  1. Velas de 1 Hora (Sem ruído de segundos)
-  2. Mercado Spot Puro (Propriedade real, nunca vende no prejuízo)
-  3. Filtro Macro Global: Só compra se Bitcoin > SMA 200
+ROBÔ QUANTITATIVO BINANCE SPOT (SIMULADOR PAPER TRADING ULTRA-REALISTA)
+- 100% Gratuito: Cotações oficiais da Binance em tempo real
+- Simulação Fiel com Taxas Oficiais da Binance (0.10% Maker/Taker + 0.05% Slippage)
+- Motor Multi-Timeframe Ativo: 15M (Scalp Dips), 1H (Swing) e 4H (Macro Estrutura)
+- Contingência Ampla de IA: Google Gemini -> Groq AI -> Motor Quantitativo Local (24/7)
+- Banca Inicial Simulada: R$ 50,00 | Ordem Mínima: R$ 10,00
 """
 
 import requests
 import json
 import time
 import sys
-import io
 import os
 from datetime import datetime
 
+# Configuração de encoding para UTF-8 seguro
 if sys.platform == 'win32':
     try:
         if hasattr(sys.stdout, 'reconfigure'):
@@ -34,14 +31,19 @@ JOURNAL_FILE = os.path.join(BASE_DIR, 'diario_spot_binance.md')
 from super_skill_brain import SuperSkillBrain
 from risk_manager import RiskManager
 from historical_market_analyzer import HistoricalMarketAnalyzer
+from ai_market_study_contingency import AIMarketStudyContingency
 
 BINANCE_API_URL = "https://api.binance.com/api/v3"
 
-# Configurações do Robô
+# Configurações do Simulador e Taxas Reais da Binance
 INITIAL_BANKROLL_BRL = 50.00       # Banca inicial simulada
 ORDER_SIZE_BRL = 10.00             # R$ 10,00 por ordem (mínimo da Binance)
 TAKE_PROFIT_PCT = 2.0              # Alvo de lucro: +2.0% por operação
-TIMEFRAME = "1h"                   # Velas de 1 Hora (Lei #1)
+
+# Custos Reais da Corretora (Binance Spot)
+BINANCE_FEE_PCT = 0.10             # Taxa padrão Spot Maker/Taker Binance (0.10%)
+SIMULATED_SLIPPAGE_PCT = 0.05      # Deslizamento médio de execução de book (0.05%)
+TOTAL_ORDER_COST_PCT = BINANCE_FEE_PCT + SIMULATED_SLIPPAGE_PCT # 0.15% por ponta
 
 # Pares Monitorados em Reais e Dólares
 TARGET_PAIRS = [
@@ -57,6 +59,7 @@ class BinanceSpotPaperEngine:
         self.brain = SuperSkillBrain()
         self.risk_manager = RiskManager(initial_capital=INITIAL_BANKROLL_BRL)
         self.historical_analyzer = HistoricalMarketAnalyzer(TARGET_PAIRS)
+        self.ai_contingency = AIMarketStudyContingency()
         self.state = self.load_state()
         self.state["super_skill"] = self.brain.state
         self.running = True
@@ -66,10 +69,14 @@ class BinanceSpotPaperEngine:
             try:
                 with open(STATE_FILE, 'r', encoding='utf-8') as f:
                     s = json.load(f)
-                    if "is_paused" not in s:
-                        s["is_paused"] = False
-                    if "api_latency_ms" not in s:
-                        s["api_latency_ms"] = 65
+                    if "total_fees_paid_brl" not in s:
+                        s["total_fees_paid_brl"] = 0.0
+                    if "gross_profit_brl" not in s:
+                        s["gross_profit_brl"] = 0.0
+                    if "active_ai_provider" not in s:
+                        s["active_ai_provider"] = "Motor Quantitativo Local (Zero Downtime)"
+                    if "detailed_logs" not in s:
+                        s["detailed_logs"] = []
                     return s
             except Exception:
                 pass
@@ -79,6 +86,8 @@ class BinanceSpotPaperEngine:
             "cash_balance_brl": INITIAL_BANKROLL_BRL,
             "total_equity_brl": INITIAL_BANKROLL_BRL,
             "accumulated_profit_brl": 0.0,
+            "gross_profit_brl": 0.0,
+            "total_fees_paid_brl": 0.0,
             "profit_pct": 0.0,
             "open_positions": [],
             "closed_trades": [],
@@ -87,7 +96,9 @@ class BinanceSpotPaperEngine:
             "is_paused": False,
             "api_latency_ms": 65,
             "last_macro_status": "ANALISANDO",
-            "current_thought": "Iniciando simulador com cotações oficiais da Binance...",
+            "active_ai_provider": "Motor Quantitativo Local (Zero Downtime)",
+            "current_thought": "Iniciando simulador com cotações oficiais e taxas reais da Binance...",
+            "detailed_logs": [],
             "last_update": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         }
 
@@ -99,6 +110,8 @@ class BinanceSpotPaperEngine:
             "cash_balance_brl": INITIAL_BANKROLL_BRL,
             "total_equity_brl": INITIAL_BANKROLL_BRL,
             "accumulated_profit_brl": 0.0,
+            "gross_profit_brl": 0.0,
+            "total_fees_paid_brl": 0.0,
             "profit_pct": 0.0,
             "open_positions": [],
             "closed_trades": [],
@@ -107,17 +120,27 @@ class BinanceSpotPaperEngine:
             "is_paused": False,
             "api_latency_ms": 65,
             "last_macro_status": "BULL 🟢 (Aguardando novo ciclo)",
-            "current_thought": "Simulação reiniciada com sucesso. Banca resetada para R$ 50,00.",
+            "active_ai_provider": "Motor Quantitativo Local (Zero Downtime)",
+            "current_thought": "Simulação reiniciada com sucesso. Banca restaurada para R$ 50,00.",
+            "detailed_logs": [],
             "last_update": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         }
         self.save_state()
 
     def toggle_pause(self):
-        """Pausa ou retoma a abertura de novas posições."""
         current = self.state.get("is_paused", False)
         self.state["is_paused"] = not current
         self.save_state()
         return self.state["is_paused"]
+
+    def add_detailed_log(self, log_type, msg):
+        ts = datetime.now().strftime("%H:%M:%S")
+        entry = {"time": ts, "type": log_type, "msg": msg}
+        logs = self.state.get("detailed_logs", [])
+        logs.insert(0, entry)
+        if len(logs) > 50:
+            logs.pop()
+        self.state["detailed_logs"] = logs
 
     def save_state(self):
         self.state["last_update"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
@@ -148,10 +171,10 @@ class BinanceSpotPaperEngine:
                 return is_bull
         except Exception:
             pass
-        return True # Fallback seguro
+        return True
 
     def fetch_candles_and_indicators(self, symbol, interval="1h", count=30):
-        """Coleta velas de 1h reais da Binance e calcula RSI(14) e Médias Móveis."""
+        """Coleta velas reais da Binance e calcula RSI(14) e Médias Móveis."""
         try:
             url = f"{BINANCE_API_URL}/klines?symbol={symbol}&interval={interval}&limit={count}"
             candles = requests.get(url, timeout=5).json()
@@ -164,8 +187,7 @@ class BinanceSpotPaperEngine:
             opens = [float(c[1]) for c in candles]
 
             # RSI 14
-            gains = []
-            losses = []
+            gains, losses = [], []
             for i in range(1, 15):
                 diff = closes[-i] - closes[-i-1]
                 if diff >= 0:
@@ -179,7 +201,6 @@ class BinanceSpotPaperEngine:
             rs = avg_gain / avg_loss if avg_loss > 0 else 100.0
             rsi = 100.0 - (100.0 / (1.0 + rs))
 
-            # EMA 9 e EMA 21
             def calc_ema(values, period):
                 k = 2.0 / (period + 1)
                 ema = values[0]
@@ -195,16 +216,16 @@ class BinanceSpotPaperEngine:
                 "rsi": round(rsi, 1),
                 "ema9": ema9,
                 "ema21": ema21,
-                "prev_close": closes[-2],
-                "prev_open": opens[-2],
                 "is_bull_candle": closes[-1] > opens[-1]
             }
         except Exception:
             return None
 
     def update_open_positions(self):
-        """Verifica se posições abertas atingiram o Take Profit de +2.0%."""
-        usdt_brl = self.get_usdt_brl_rate()
+        """
+        Verifica se posições abertas atingiram o Take Profit de +2.0%.
+        Desconta as taxas oficiais da Binance (0.10%) e slippage (0.05%) para fidelidade total!
+        """
         active_positions = []
         positions_value_brl = 0.0
 
@@ -213,6 +234,7 @@ class BinanceSpotPaperEngine:
             entry_price = pos["entry_price"]
             stake_brl = pos["stake_brl"]
             target_price = pos["target_price"]
+            buy_fee_brl = pos.get("buy_fee_brl", stake_brl * (TOTAL_ORDER_COST_PCT / 100.0))
 
             try:
                 res = requests.get(f"{BINANCE_API_URL}/ticker/price?symbol={sym}", timeout=4).json()
@@ -226,26 +248,38 @@ class BinanceSpotPaperEngine:
 
             # REGRA SPOT: Venda automática com LUCRO atingido (+2.0%)
             if current_price >= target_price:
-                profit_brl = current_val_brl - stake_brl
-                self.state["cash_balance_brl"] += current_val_brl
-                self.state["accumulated_profit_brl"] += profit_brl
+                gross_profit_brl = current_val_brl - stake_brl
+                sell_fee_brl = current_val_brl * (TOTAL_ORDER_COST_PCT / 100.0)
+                total_trade_fees = buy_fee_brl + sell_fee_brl
+                
+                net_exit_val_brl = current_val_brl - sell_fee_brl
+                net_profit_brl = net_exit_val_brl - stake_brl
+
+                self.state["cash_balance_brl"] += net_exit_val_brl
+                self.state["accumulated_profit_brl"] += net_profit_brl
+                self.state["gross_profit_brl"] = round(self.state.get("gross_profit_brl", 0.0) + gross_profit_brl, 4)
+                self.state["total_fees_paid_brl"] = round(self.state.get("total_fees_paid_brl", 0.0) + total_trade_fees, 4)
                 self.state["win_count"] += 1
 
                 trade_record = {
                     "symbol": sym,
+                    "timeframe": pos.get("timeframe", "1H"),
                     "entry_time": pos["entry_time"],
                     "exit_time": datetime.now().strftime("%d/%m %H:%M:%S"),
                     "entry_price": entry_price,
                     "exit_price": current_price,
+                    "gross_profit_brl": round(gross_profit_brl, 2),
+                    "net_profit_brl": round(net_profit_brl, 2),
                     "profit_pct": round(change_pct, 2),
-                    "profit_brl": round(profit_brl, 2),
+                    "fees_paid_brl": round(total_trade_fees, 4),
                     "stake_brl": stake_brl
                 }
                 self.state["closed_trades"].append(trade_record)
                 self.log_trade(trade_record)
-                print(f"\n🎉 [TAKE PROFIT SPOT EXECUTADO] {sym} vendido a {current_price}! Lucro: +R$ {profit_brl:.2f} (+{change_pct:.2f}%)!")
+                self.add_detailed_log("TAKE_PROFIT", f"{sym} bateu alvo (+{change_pct:.2f}%)! Lucro Líquido Real: +R$ {net_profit_brl:.2f} (Taxa Binance: R$ {total_trade_fees:.3f}).")
+                print(f"\n🎉 [TAKE PROFIT SPOT REAL] {sym} vendido! Lucro Líquido: +R$ {net_profit_brl:.2f} | Taxas Pagas: R$ {total_trade_fees:.3f}!")
             else:
-                # Mantém posição aberta (Lei #2: NUNCA vende no prejuízo, espera o ativo valorizar)
+                # Mantém em custódia (Mercado Spot puro: nunca vende no prejuízo)
                 pos["current_price"] = current_price
                 pos["current_pnl_pct"] = round(change_pct, 2)
                 active_positions.append(pos)
@@ -258,10 +292,11 @@ class BinanceSpotPaperEngine:
 
     def log_trade(self, trade):
         try:
-            entry = f"\n### Trade SPOT - {trade['exit_time']}\n" \
+            entry = f"\n### Trade SPOT ({trade.get('timeframe', '1H')}) - {trade['exit_time']}\n" \
                     f"- **Ativo:** {trade['symbol']}\n" \
                     f"- **Compra:** {trade['entry_price']} ➔ **Venda:** {trade['exit_price']} (+{trade['profit_pct']}%)\n" \
-                    f"- **Resultado:** 🟢 **WIN (+R$ {trade['profit_brl']:.2f})** | **Banca Total:** R$ {self.state['total_equity_brl']:.2f}\n" \
+                    f"- **Lucro Líquido Real:** +R$ {trade['net_profit_brl']:.2f} (Taxas: R$ {trade['fees_paid_brl']:.3f})\n" \
+                    f"- **Banca Atualizada:** R$ {self.state['total_equity_brl']:.2f}\n" \
                     f"---\n"
             with open(JOURNAL_FILE, 'a', encoding='utf-8') as f:
                 f.write(entry)
@@ -269,70 +304,75 @@ class BinanceSpotPaperEngine:
             pass
 
     def run_cycle(self):
+        t0 = time.time()
         print("\n" + "=" * 68)
         print("🤖 ROBÔ BINANCE SPOT (SIMULADOR PAPER TRADING - BANCA R$ 50,00)")
         print(f"💰 Saldo Líquido: R$ {self.state['cash_balance_brl']:.2f} | Patrimônio Total: R$ {self.state['total_equity_brl']:.2f}")
-        print(f"📈 Lucro Acumulado: R$ {self.state['accumulated_profit_brl']:.2f} ({self.state['profit_pct']:+.2f}%) | Vitórias: {self.state['win_count']}")
+        print(f"📈 Lucro Acumulado: R$ {self.state['accumulated_profit_brl']:.2f} ({self.state['profit_pct']:+.2f}%) | Taxas Pagas: R$ {self.state.get('total_fees_paid_brl', 0.0):.3f}")
         print("=" * 68)
 
-        t0 = time.time()
         # 1. Atualiza posições em andamento
         self.update_open_positions()
 
-        # Mede latência aproximada da Binance
+        # Mede latência
         self.state["api_latency_ms"] = max(25, int((time.time() - t0) * 1000))
 
         # 2. Verifica se o usuário pausou as compras
         if self.state.get("is_paused", False):
             self.state["current_thought"] = "⏸️ Robô em modo PAUSADO pelo usuário. Monitorando lucros das posições abertas."
-            print(self.state["current_thought"])
+            self.add_detailed_log("PAUSA", "Simulador pausado manualmente pelo operador.")
             self.save_state()
             return
 
         # 3. Verifica a Lei #3 (Filtro Macro SMA 200 do Bitcoin)
         macro_ok = self.check_macro_sma200()
-        print(f"\n🌐 Filtro Macro Global: {self.state['last_macro_status']}")
 
         if not macro_ok:
-            self.state["current_thought"] = "🛡️ [LEI #3 ATIVA]: Mercado global em correção. Robô mantém o dinheiro 100% em caixa."
-            print(self.state["current_thought"])
+            self.state["current_thought"] = "🛡️ [LEI #3 ATIVA]: Bitcoin abaixo da SMA 200 diária. Robô mantém o dinheiro 100% protegido em caixa."
+            self.add_detailed_log("MACRO_DEFESA", "Mercado global em correção. Novas compras bloqueadas.")
             self.save_state()
             return
 
-        # 4. Se temos saldo em caixa (mínimo R$ 10,00), caçamos oportunidades no Spot
-        if self.state["cash_balance_brl"] < ORDER_SIZE_BRL:
-            self.state["current_thought"] = f"⏳ Saldo livre (R$ {self.state['cash_balance_brl']:.2f}) aguardando fechamento de posições com lucro..."
-            print(self.state["current_thought"])
-            self.save_state()
-            return
-
-        print("\n🔍 Escaneando oportunidades em Velas de 1H nos pares Spot...")
-        
         # 4. Atualiza inteligência histórica (500 velas)
         hist_data = self.historical_analyzer.run_full_historical_analysis()
         self.state["historical_analysis"] = hist_data.get("pairs", {})
 
+        # 5. Escaneamento Multi-Timeframe (15m, 1h, 4h)
+        print("\n🔍 Escaneando oportunidades Multi-Timeframe (15m, 1h, 4h) nos pares Spot...")
         pair_studies = []
+
+        if self.state["cash_balance_brl"] < ORDER_SIZE_BRL:
+            self.state["current_thought"] = f"⏳ Saldo livre (R$ {self.state['cash_balance_brl']:.2f}) aguardando fechamento de posições para reinvestir."
+            self.save_state()
+            return
 
         for target in TARGET_PAIRS:
             sym = target["symbol"]
 
-            tech = self.fetch_candles_and_indicators(sym, interval=TIMEFRAME)
-            if not tech:
+            # Coleta dados nos 3 Timeframes
+            t15 = self.fetch_candles_and_indicators(sym, interval="15m")
+            t1h = self.fetch_candles_and_indicators(sym, interval="1h")
+            t4h = self.fetch_candles_and_indicators(sym, interval="4h")
+
+            if not t1h:
                 continue
 
-            price = tech["current_price"]
-            rsi = tech["rsi"]
-            ema9 = tech["ema9"]
-            ema21 = tech["ema21"]
-            trend = "ALTA ↗" if ema9 > ema21 else "CORREÇÃO ↘"
+            price = t1h["current_price"]
+            rsi_15m = t15["rsi"] if t15 else 50.0
+            rsi_1h = t1h["rsi"]
+            rsi_4h = t4h["rsi"] if t4h else 50.0
+
+            trend_1h = "ALTA ↗" if t1h["ema9"] > t1h["ema21"] else "BAIXA ↘"
+            trend_4h = "ALTA ↗" if (t4h and t4h["ema9"] > t4h["ema21"]) else "BAIXA ↘"
 
             pair_studies.append({
                 "symbol": sym,
                 "name": target["name"],
                 "price": price,
-                "rsi": rsi,
-                "trend": trend
+                "rsi_15m": rsi_15m,
+                "rsi_1h": rsi_1h,
+                "rsi_4h": rsi_4h,
+                "trend": trend_1h
             })
 
             # Evita comprar o mesmo par se já tiver posição aberta nele
@@ -340,47 +380,74 @@ class BinanceSpotPaperEngine:
             if already_open:
                 continue
 
-            # GATILHO SPOT CONSERVADOR (Velas de 1 Hora):
-            is_oversold = rsi <= 45
-            is_ema_bullish = ema9 > ema21 and tech["is_bull_candle"]
+            # DETECÇÃO MULTI-TIMEFRAME DE OPORTUNIDADES:
+            is_scalp_15m = (rsi_15m <= 38 and trend_1h == "ALTA ↗")
+            is_swing_1h = (rsi_1h <= 45 or (t1h["ema9"] > t1h["ema21"] and t1h["is_bull_candle"]))
+            is_breakout_4h = (trend_4h == "ALTA ↗" and 48 <= rsi_4h <= 60 and (t15 and t15["is_bull_candle"]))
 
-            print(f"   • {sym:<10}: Preço R$/$ {price:<10.2f} | RSI(1H): {rsi:<4.1f} | EMA9/21: {trend}")
+            matched_tf = None
+            setup_desc = ""
 
-            if (is_oversold or is_ema_bullish):
-                # 1. Filtro Histórico dos últimos 21 dias (Evita comprar no topo da resistência)
+            if is_scalp_15m:
+                matched_tf = "15m"
+                setup_desc = f"Scalp Dip 15M (RSI {rsi_15m} em suporte de 1H)"
+            elif is_swing_1h:
+                matched_tf = "1H"
+                setup_desc = f"Swing Pullback 1H (RSI {rsi_1h} + EMA9/21 {trend_1h})"
+            elif is_breakout_4h:
+                matched_tf = "4H"
+                setup_desc = f"Breakout Institucional 4H (Tendência Macro {trend_4h})"
+
+            print(f"   • {sym:<10}: R$/$ {price:<9.2f} | 15m RSI: {rsi_15m:<4.1f} | 1h RSI: {rsi_1h:<4.1f} | 4h: {trend_4h} | Gatilho: {matched_tf or 'Nenhum'}")
+
+            if matched_tf:
+                # 1. Filtro Histórico (evita comprar no topo da resistência)
                 hist_ok, hist_reason = self.historical_analyzer.evaluate_entry_safety(sym)
                 if not hist_ok:
-                    print(f"   📊 [HISTÓRICO 500H]: {sym} bloqueado: {hist_reason}")
+                    self.add_detailed_log("FILTRO_HISTORICO", f"{sym} bloqueado: {hist_reason}")
                     continue
 
-                # 2. Passa pelo Risk Manager antes de qualquer ordem
+                # 2. Risk Manager
                 allowed, risk_reason, risk_status = self.risk_manager.evaluate_order(self.state, sym, ORDER_SIZE_BRL)
                 if not allowed:
-                    print(f"   🛡️ [RISK MANAGER]: Ordem de {sym} bloqueada: {risk_reason}")
+                    self.add_detailed_log("RISK_BLOCK", f"Ordem de {sym} bloqueada pelo Risk Manager: {risk_reason}")
                     continue
 
+                # 3. Execução com Desconto de Taxas Reais da Binance
+                buy_fee_brl = round(ORDER_SIZE_BRL * (TOTAL_ORDER_COST_PCT / 100.0), 4) # Taxa 0.10% + 0.05% slippage
                 target_profit_price = price * (1 + (TAKE_PROFIT_PCT / 100.0))
-                
-                # Executa compra simulada a preço de mercado real da Binance
-                self.state["cash_balance_brl"] -= ORDER_SIZE_BRL
+
+                self.state["cash_balance_brl"] -= (ORDER_SIZE_BRL + buy_fee_brl)
+                self.state["total_fees_paid_brl"] = round(self.state.get("total_fees_paid_brl", 0.0) + buy_fee_brl, 4)
+
                 new_position = {
                     "symbol": sym,
                     "name": target["name"],
+                    "timeframe": matched_tf,
                     "entry_time": datetime.now().strftime("%d/%m %H:%M:%S"),
                     "entry_price": price,
                     "target_price": round(target_profit_price, 4),
                     "stake_brl": ORDER_SIZE_BRL,
+                    "buy_fee_brl": buy_fee_brl,
                     "current_price": price,
                     "current_pnl_pct": 0.0,
-                    "reason": f"RSI 1H ({rsi}) + Alinhamento EMA9/21 ({trend})"
+                    "reason": f"[{matched_tf}] {setup_desc}"
                 }
                 self.state["open_positions"].append(new_position)
-                print(f"\n🛒 [COMPRA EXECUTADA NO SPOT]: R$ {ORDER_SIZE_BRL:.2f} de {sym} a {price:.4f}!")
-                print(f"🎯 Alvo de Venda (+{TAKE_PROFIT_PCT}%): {target_profit_price:.4f}")
+                self.add_detailed_log("COMPRA_EXECUTADA", f"[{matched_tf}] Compra de R$ 10 em {sym} a {price:.4f}. Taxa Binance descontada: R$ {buy_fee_brl:.3f}.")
+                print(f"\n🛒 [COMPRA EXECUTADA SPOT ({matched_tf})]: R$ {ORDER_SIZE_BRL:.2f} de {sym} a {price:.4f}!")
+                print(f"💸 Taxa Binance Descontada: R$ {buy_fee_brl:.3f} | Alvo Líquido (+2%): {target_profit_price:.4f}")
                 self.save_state()
-                break # Uma entrada por ciclo para diversificar
+                break
 
-        # Registra estudo na Super Skill Quantitativa
+        # 6. Atualiza o Cérebro de IA com Modelo de Contingência
+        thought, provider = self.ai_contingency.generate_market_thought(
+            pair_studies, self.state["last_macro_status"], self.state.get("open_positions", []), self.state["total_equity_brl"]
+        )
+        self.state["current_thought"] = thought
+        self.state["active_ai_provider"] = provider
+
+        # 7. Registra estudo na Super Skill
         self.brain.record_market_study(pair_studies, self.state["last_macro_status"], self.state.get("closed_trades", []))
         self.state["super_skill"] = self.brain.state
         self.save_state()

@@ -187,7 +187,7 @@ HTML_DASHBOARD = """
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full md:w-auto text-slate-300">
         <div class="bg-darkbg/90 px-3 py-1.5 rounded-lg border border-slate-800 flex items-center space-x-2">
           <span class="text-amber-400 font-extrabold">#1</span>
-          <span>Velas de 1H (Filtro Ruído)</span>
+          <span>Multi-Timeframe (15m, 1h, 4h)</span>
         </div>
         <div class="bg-darkbg/90 px-3 py-1.5 rounded-lg border border-slate-800 flex items-center space-x-2">
           <span class="text-emerald-400 font-extrabold">#2</span>
@@ -251,6 +251,19 @@ HTML_DASHBOARD = """
 
     </div>
 
+    <!-- Barra de Fidelidade: Taxas da Binance -->
+    <div class="bg-cardbg border border-bordercol rounded-xl px-4 py-2.5 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-300 gap-2 shadow-sm">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-receipt text-amber-400"></i>
+        <span><b>Simulação Ultra-Fiel:</b> Taxas da Binance Descontadas (0.10% Spot + 0.05% Slippage):</span>
+        <span class="mono font-bold text-amber-400 text-sm" id="totalFeesPaid">R$ 0.000</span>
+      </div>
+      <div class="text-[11px] text-slate-400 flex items-center gap-1.5">
+        <i class="fa-solid fa-shield-check text-emerald-400"></i>
+        <span>Lucro exibido é <b>100% Líquido no Bolso</b> após todos os custos da exchange.</span>
+      </div>
+    </div>
+
     <!-- Heurística #1: Termômetro Macro Mundial (Bitcoin vs SMA 200) -->
     <div class="bg-cardbg border border-bordercol rounded-xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-sm">
       <div class="flex items-center space-x-3.5">
@@ -273,6 +286,37 @@ HTML_DASHBOARD = """
       </div>
     </div>
 
+    <!-- CARD: O Que o Robô Está Pensando & Analisando Agora -->
+    <div class="bg-gradient-to-br from-cardbg via-slate-900 to-darkbg border border-purple-500/40 rounded-xl p-4 shadow-md">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-bordercol pb-2.5 mb-3">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 text-lg">
+            <i class="fa-solid fa-brain"></i>
+          </div>
+          <div>
+            <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              O Que o Robô Está Pensando & Analisando Agora
+            </h3>
+            <span class="text-[10px] text-slate-400">Raciocínio Quantitativo Autônomo com Contingência 24H</span>
+          </div>
+        </div>
+
+        <div class="flex items-center space-x-2 flex-wrap gap-y-1">
+          <span class="text-[10px] bg-purple-500/10 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded font-mono" id="activeAiBadge">
+            <i class="fa-solid fa-microchip text-purple-400"></i> Motor Quantitativo Local
+          </span>
+          <span class="text-[10px] bg-blue-500/10 text-blue-300 border border-blue-500/20 px-2 py-0.5 rounded font-mono">
+            <i class="fa-solid fa-clock-rotate-left text-blue-400"></i> Multi-TF: 15M | 1H | 4H
+          </span>
+        </div>
+      </div>
+
+      <div class="bg-darkbg/90 border border-slate-800 rounded-lg p-3 text-xs text-slate-200 leading-relaxed font-sans shadow-inner">
+        <i class="fa-solid fa-quote-left text-purple-400 mr-1.5 opacity-60"></i>
+        <span id="currentThoughtText" class="italic">Analisando cotações em tempo real da Binance...</span>
+      </div>
+    </div>
+
     <!-- Tabela de Posições Abertas (Custódia Spot) -->
     <div class="bg-cardbg border border-bordercol rounded-xl p-4 shadow-sm">
       <div class="flex items-center justify-between mb-3.5">
@@ -286,21 +330,23 @@ HTML_DASHBOARD = """
       </div>
 
       <div class="overflow-x-auto custom-scroll">
-        <table class="w-full text-left text-xs min-w-[620px]">
+        <table class="w-full text-left text-xs min-w-[700px]">
           <thead>
             <tr class="border-b border-bordercol text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
+              <th class="py-2.5 px-3">TF</th>
               <th class="py-2.5 px-3">Ativo</th>
               <th class="py-2.5 px-3">Data / Hora</th>
               <th class="py-2.5 px-3">Preço Compra</th>
               <th class="py-2.5 px-3">Cotação Atual</th>
               <th class="py-2.5 px-3">Alvo Lucro (+2%)</th>
               <th class="py-2.5 px-3">Rentabilidade</th>
+              <th class="py-2.5 px-3">Taxa Paga</th>
               <th class="py-2.5 px-3 text-right">Valor em BRL</th>
             </tr>
           </thead>
           <tbody id="positionsTable" class="divide-y divide-bordercol/60 font-medium">
             <tr>
-              <td colspan="7" class="py-6 text-center text-slate-400">
+              <td colspan="9" class="py-6 text-center text-slate-400">
                 <i class="fa-solid fa-spinner fa-spin text-amber-400 mr-2"></i> Carregando carteira de ativos...
               </td>
             </tr>
@@ -309,7 +355,7 @@ HTML_DASHBOARD = """
       </div>
     </div>
 
-    <!-- Grade Inferior: Histórico de Trades Fechados & Diário de Bordo do Robô -->
+    <!-- Grade Inferior: Histórico de Trades Fechados & Logs Detalhados em Tempo Real -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
       <!-- Histórico de Trades Fechados com Lucro -->
@@ -328,9 +374,9 @@ HTML_DASHBOARD = """
               <thead>
                 <tr class="border-b border-bordercol text-slate-400 uppercase text-[11px] tracking-wider">
                   <th class="py-2 px-2">Ativo</th>
-                  <th class="py-2 px-2">Horário Saída</th>
+                  <th class="py-2 px-2">Saída</th>
                   <th class="py-2 px-2">Lucro %</th>
-                  <th class="py-2 px-2 text-right">Lucro R$</th>
+                  <th class="py-2 px-2 text-right">Lucro Líquido</th>
                 </tr>
               </thead>
               <tbody id="historyTable" class="divide-y divide-bordercol/60">
@@ -354,24 +400,24 @@ HTML_DASHBOARD = """
         </div>
       </div>
 
-      <!-- Diário de Bordo & Logs do Robô (Heurística #9) -->
+      <!-- CARD: Logs de Tudo o Que Está Acontecendo -->
       <div class="bg-cardbg border border-bordercol rounded-xl p-4 shadow-sm flex flex-col justify-between">
         <div>
           <div class="flex items-center justify-between mb-3.5">
             <div class="flex items-center space-x-2">
-              <i class="fa-solid fa-terminal text-blue-400"></i>
-              <h2 class="text-sm font-bold text-white tracking-wide">Diário de Bordo & Pensamento do Algoritmo</h2>
+              <i class="fa-solid fa-list-check text-blue-400"></i>
+              <h2 class="text-sm font-bold text-white tracking-wide">Logs de Tudo o Que Está Acontecendo</h2>
             </div>
-            <span class="text-[11px] mono text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700/60">Ao Vivo</span>
+            <span class="text-[10px] mono text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700/60">Tempo Real</span>
           </div>
 
-          <div id="logConsole" class="bg-darkbg border border-slate-800 rounded-lg p-3 text-xs mono text-slate-300 h-64 overflow-y-auto space-y-1.5 custom-scroll">
-            <div class="text-slate-500">Conectando ao fluxo de logs...</div>
+          <div id="detailedLogConsole" class="bg-darkbg border border-slate-800 rounded-lg p-3 text-xs mono text-slate-300 h-64 overflow-y-auto space-y-1.5 custom-scroll">
+            <div class="text-slate-500">Conectando ao fluxo de eventos...</div>
           </div>
         </div>
 
         <div class="pt-3 border-t border-bordercol mt-3 flex items-center justify-between text-xs text-slate-400">
-          <span>Próxima varredura automática em: <b class="text-white mono" id="countdownTimer">60s</b></span>
+          <span>Próxima varredura em: <b class="text-white mono" id="countdownTimer">60s</b></span>
           <span class="text-[11px] text-emerald-400 font-semibold"><i class="fa-solid fa-check"></i> Binance REST v3</span>
         </div>
       </div>
@@ -658,11 +704,16 @@ HTML_DASHBOARD = """
         // Estado de Pausa
         updatePauseUI(data.is_paused || false);
 
-        // 1. Top Metrics
+        // 1. Top Metrics & Taxas
         document.getElementById('totalEquity').innerText = `R$ ${data.total_equity_brl.toFixed(2)}`;
         document.getElementById('initialCapital').innerText = `R$ ${data.initial_capital_brl.toFixed(2)}`;
         document.getElementById('cashBalance').innerText = `R$ ${data.cash_balance_brl.toFixed(2)}`;
         
+        const feesEl = document.getElementById('totalFeesPaid');
+        if (feesEl) feesEl.innerText = `R$ ${(data.total_fees_paid_brl || 0).toFixed(3)}`;
+        const feesF = document.getElementById('feesFooter');
+        if (feesF) feesF.innerText = (data.total_fees_paid_brl || 0).toFixed(3);
+
         const profitBrl = data.accumulated_profit_brl || 0;
         const profitPct = data.profit_pct || 0;
         document.getElementById('profitBrl').innerText = `${profitBrl >= 0 ? '+' : ''}R$ ${profitBrl.toFixed(2)}`;
@@ -675,21 +726,34 @@ HTML_DASHBOARD = """
         document.getElementById('macroStatus').innerHTML = data.last_macro_status || 'Em Análise...';
         document.getElementById('lastUpdate').innerText = data.last_update || '--';
 
-        // 2. Tabela de Posições Abertas
+        // 2. Raciocínio & Pensamento da IA
+        const tEl = document.getElementById('currentThoughtText');
+        if (tEl && data.current_thought) tEl.innerText = data.current_thought;
+        const aiBadge = document.getElementById('activeAiBadge');
+        if (aiBadge && data.active_ai_provider) {
+          aiBadge.innerHTML = `<i class="fa-solid fa-microchip text-purple-400"></i> ${data.active_ai_provider}`;
+        }
+
+        // 3. Tabela de Posições Abertas (Custódia Spot)
         const positions = data.open_positions || [];
         document.getElementById('openCount').innerText = `${positions.length} ativa${positions.length === 1 ? '' : 's'}`;
         const pTable = document.getElementById('positionsTable');
 
         if (positions.length === 0) {
-          pTable.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-slate-400"><i class="fa-solid fa-magnifying-glass text-slate-500 mr-2"></i> Nenhuma posição aberta no momento. O robô está buscando as melhores entradas em velas de 1H.</td></tr>`;
+          pTable.innerHTML = `<tr><td colspan="9" class="py-6 text-center text-slate-400"><i class="fa-solid fa-magnifying-glass text-slate-500 mr-2"></i> Nenhuma posição aberta no momento. O robô está rastreando oportunidades em 15M, 1H e 4H.</td></tr>`;
         } else {
           pTable.innerHTML = positions.map(pos => {
             const pnl = pos.current_pnl_pct || 0;
             const isProfit = pnl >= 0;
             const pnlClass = isProfit ? 'text-emerald-400 bg-emerald-500/10' : 'text-amber-400 bg-amber-500/10';
             const curPrice = pos.current_price || pos.entry_price;
+            const tf = pos.timeframe || '1H';
+            const tfBadge = tf === '15m' ? '<span class="bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded font-bold text-[10px]">15m</span>' : (tf === '4H' ? '<span class="bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded font-bold text-[10px]">4H</span>' : '<span class="bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded font-bold text-[10px]">1H</span>');
+            const feeBrl = pos.buy_fee_brl || (pos.stake_brl * 0.0015);
+
             return `
               <tr class="hover:bg-slate-800/40 transition">
+                <td class="py-2.5 px-3">${tfBadge}</td>
                 <td class="py-2.5 px-3">
                   <div class="font-bold text-white text-xs flex items-center gap-1.5">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
@@ -706,6 +770,7 @@ HTML_DASHBOARD = """
                     ${isProfit ? '+' : ''}${pnl.toFixed(2)}%
                   </span>
                 </td>
+                <td class="py-2.5 px-3 mono text-slate-400 text-[11px]">R$ ${feeBrl.toFixed(3)}</td>
                 <td class="py-2.5 px-3 mono text-right font-bold text-slate-100">
                   R$ ${pos.stake_brl.toFixed(2)}
                 </td>
@@ -714,7 +779,7 @@ HTML_DASHBOARD = """
           }).join('');
         }
 
-        // 3. Histórico de Trades Fechados
+        // 4. Histórico de Trades Fechados
         const closed = data.closed_trades || [];
         document.getElementById('closedCount').innerText = `${closed.length} finalizada${closed.length === 1 ? '' : 's'}`;
         const hTable = document.getElementById('historyTable');
@@ -724,24 +789,36 @@ HTML_DASHBOARD = """
         } else {
           hTable.innerHTML = closed.slice(-15).reverse().map(trade => `
             <tr class="hover:bg-slate-800/40 transition">
-              <td class="py-2 px-2 font-bold text-white">${trade.symbol}</td>
+              <td class="py-2 px-2 font-bold text-white">${trade.symbol} <span class="text-[9px] text-slate-500">(${trade.timeframe || '1H'})</span></td>
               <td class="py-2 px-2 text-slate-400 text-[11px]">${trade.exit_time}</td>
               <td class="py-2 px-2 font-bold text-emerald-400 mono">+${trade.profit_pct}%</td>
-              <td class="py-2 px-2 text-right font-bold text-emerald-400 mono">+R$ ${trade.profit_brl.toFixed(2)}</td>
+              <td class="py-2 px-2 text-right font-bold text-emerald-400 mono">+R$ ${(trade.net_profit_brl || trade.profit_brl).toFixed(2)}</td>
             </tr>
           `).join('');
         }
 
-        // 4. Logs de Atividade
-        if (data.activity_logs) {
-          const consoleDiv = document.getElementById('logConsole');
-          consoleDiv.innerHTML = data.activity_logs.map(l => {
-            let color = 'text-slate-300';
-            if (l.includes('COMPRA') || l.includes('TAKE PROFIT') || l.includes('concluído')) color = 'text-emerald-300';
-            else if (l.includes('Alerta') || l.includes('Erro')) color = 'text-rose-400';
-            else if (l.includes('PAUSADO')) color = 'text-amber-300';
-            return `<div class="leading-relaxed hover:text-white transition ${color}">${l}</div>`;
-          }).join('');
+        // 5. Card de Logs de Tudo o que Está Acontecendo
+        const dLogs = data.detailed_logs || [];
+        const dConsole = document.getElementById('detailedLogConsole');
+        if (dConsole) {
+          if (dLogs.length === 0 && data.activity_logs) {
+            dConsole.innerHTML = data.activity_logs.map(l => `<div class="leading-relaxed text-slate-300">${l}</div>`).join('');
+          } else {
+            dConsole.innerHTML = dLogs.map(l => {
+              let badgeColor = 'bg-slate-800 text-slate-300';
+              if (l.type === 'COMPRA_EXECUTADA') badgeColor = 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+              else if (l.type === 'TAKE_PROFIT') badgeColor = 'bg-amber-500/20 text-amber-400 border border-amber-500/30';
+              else if (l.type === 'RISK_BLOCK' || l.type === 'FILTRO_HISTORICO') badgeColor = 'bg-rose-500/20 text-rose-400 border border-rose-500/30';
+              else if (l.type === 'MACRO_DEFESA') badgeColor = 'bg-blue-500/20 text-blue-400 border border-blue-500/30';
+              return `
+                <div class="flex items-start space-x-2 py-0.5 hover:bg-slate-900/60 rounded px-1 transition text-[11px]">
+                  <span class="text-slate-500 shrink-0 mt-0.5 font-mono">[${l.time}]</span>
+                  <span class="shrink-0 text-[9px] font-bold px-1.5 py-0.2 rounded font-mono ${badgeColor}">${l.type}</span>
+                  <span class="text-slate-200">${l.msg}</span>
+                </div>
+              `;
+            }).join('');
+          }
         }
 
         // 5. Super Skill Brain

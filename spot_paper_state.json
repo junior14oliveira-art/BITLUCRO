@@ -2,9 +2,9 @@
   "mode": "PAPER_TRADING_SPOT",
   "initial_capital_brl": 50.0,
   "cash_balance_brl": 30.0,
-  "total_equity_brl": 50.05,
+  "total_equity_brl": 50.03,
   "accumulated_profit_brl": 0.0,
-  "profit_pct": 0.1,
+  "profit_pct": 0.06,
   "open_positions": [
     {
       "symbol": "SOLBRL",
@@ -13,8 +13,8 @@
       "entry_price": 628.1,
       "target_price": 640.662,
       "stake_brl": 10.0,
-      "current_price": 631.2,
-      "current_pnl_pct": 0.49,
+      "current_price": 630.7,
+      "current_pnl_pct": 0.41,
       "reason": "RSI 1H (45.1) + Alinhamento EMA9/21"
     },
     {
@@ -24,25 +24,25 @@
       "entry_price": 439280.0,
       "target_price": 448065.6,
       "stake_brl": 10.0,
-      "current_price": 439280.0,
-      "current_pnl_pct": 0.0,
+      "current_price": 438947.0,
+      "current_pnl_pct": -0.08,
       "reason": "RSI 1H (60.6) + Alinhamento EMA9/21 (ALTA ↗)"
     }
   ],
   "closed_trades": [],
   "win_count": 0,
   "loss_count": 0,
-  "last_macro_status": "BULL 🟢 (BTC: $84,516 > SMA200: $71,109)",
-  "current_thought": "Iniciando simulador com cotações oficiais da Binance...",
-  "last_update": "26/09/2026 22:52:42",
+  "last_macro_status": "BULL 🟢 (BTC: $84,460 > SMA200: $71,109)",
+  "current_thought": "[23:04] Mercado operando com tendência macro de alta consolidada (BTC acima da SMA 200). Custódia ativa em SOLBRL (PnL: +0.41%) aguardando alvo programado de +2.0%. Escaneando confluência multi-tempo (15m, 1h e 4h) sem pressa, preservando capital.",
+  "last_update": "26/09/2026 23:04:21",
   "is_paused": false,
-  "api_latency_ms": 1264,
+  "api_latency_ms": 1062,
   "super_skill": {
     "skill_name": "BITLUCRO Quantitative Spot Playbook",
     "version": "1.0.0",
     "brain_level": 1,
     "level_title": "Analista Quantitativo Júnior",
-    "total_cycles_studied": 1,
+    "total_cycles_studied": 2,
     "hours_studied": 0.0,
     "patterns_identified": 0,
     "key_learnings": [
@@ -66,8 +66,96 @@
       }
     ],
     "last_observations": [
+      "[23:04:21] SOLBRL: RSI None | Preço R$/$ 630.70 | Tendência: ALTA ↗.",
       "[22:52:42] SOLBRL: RSI 50.6 | Preço R$/$ 631.20 | Tendência: ALTA ↗."
     ],
-    "last_update": "26/09/2026 22:52:42"
+    "last_update": "26/09/2026 23:04:21"
+  },
+  "total_fees_paid_brl": 0.0,
+  "gross_profit_brl": 0.0,
+  "active_ai_provider": "Motor Quantitativo Heurístico (Infalível 24/7)",
+  "detailed_logs": [
+    {
+      "time": "23:04:21",
+      "type": "FILTRO_HISTORICO",
+      "msg": "RENDERUSDT bloqueado: Ativo em Resistência Máxima dos últimos 21 dias (95.1% do range). Evitando compra no topo."
+    },
+    {
+      "time": "23:04:19",
+      "type": "FILTRO_HISTORICO",
+      "msg": "NEARUSDT bloqueado: Ativo em Resistência Máxima dos últimos 21 dias (96.3% do range). Evitando compra no topo."
+    }
+  ],
+  "historical_analysis": {
+    "SOLBRL": {
+      "candles_analyzed": 500,
+      "support_price": 494.7,
+      "resistance_price": 638.5,
+      "current_price": 631.2,
+      "range_position_pct": 94.9,
+      "historical_win_rate_pct": 71.6,
+      "signals_tested": 197,
+      "wins_count": 141,
+      "avg_hours_to_tp": 22.8,
+      "avg_hourly_volatility_pct": 0.85,
+      "status": "EXCELENTE",
+      "name": "Solana"
+    },
+    "BTCBRL": {
+      "candles_analyzed": 500,
+      "support_price": 387000.0,
+      "resistance_price": 447322.0,
+      "current_price": 439229.0,
+      "range_position_pct": 86.6,
+      "historical_win_rate_pct": 44.1,
+      "signals_tested": 170,
+      "wins_count": 75,
+      "avg_hours_to_tp": 23.5,
+      "avg_hourly_volatility_pct": 0.51,
+      "status": "MODERADO",
+      "name": "Bitcoin"
+    },
+    "ETHBRL": {
+      "candles_analyzed": 500,
+      "support_price": 12175.88,
+      "resistance_price": 14360.49,
+      "current_price": 14049.31,
+      "range_position_pct": 85.8,
+      "historical_win_rate_pct": 68.8,
+      "signals_tested": 157,
+      "wins_count": 108,
+      "avg_hours_to_tp": 25.7,
+      "avg_hourly_volatility_pct": 0.7,
+      "status": "BOM",
+      "name": "Ethereum"
+    },
+    "NEARUSDT": {
+      "candles_analyzed": 500,
+      "support_price": 2.204,
+      "resistance_price": 5.211,
+      "current_price": 5.101,
+      "range_position_pct": 96.3,
+      "historical_win_rate_pct": 98.6,
+      "signals_tested": 141,
+      "wins_count": 139,
+      "avg_hours_to_tp": 8.1,
+      "avg_hourly_volatility_pct": 2.63,
+      "status": "EXCELENTE",
+      "name": "NEAR"
+    },
+    "RENDERUSDT": {
+      "candles_analyzed": 500,
+      "support_price": 1.284,
+      "resistance_price": 2.064,
+      "current_price": 2.026,
+      "range_position_pct": 95.1,
+      "historical_win_rate_pct": 84.7,
+      "signals_tested": 150,
+      "wins_count": 127,
+      "avg_hours_to_tp": 15.9,
+      "avg_hourly_volatility_pct": 1.59,
+      "status": "EXCELENTE",
+      "name": "Render"
+    }
   }
 }
