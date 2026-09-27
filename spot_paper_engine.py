@@ -32,6 +32,7 @@ from super_skill_brain import SuperSkillBrain
 from risk_manager import RiskManager
 from historical_market_analyzer import HistoricalMarketAnalyzer
 from ai_market_study_contingency import AIMarketStudyContingency
+from dynamic_market_scanner import DynamicMarketScanner
 
 BINANCE_API_URL = "https://api.binance.com/api/v3"
 
@@ -45,7 +46,7 @@ BINANCE_FEE_PCT = 0.10             # Taxa padrão Spot Maker/Taker Binance (0.10
 SIMULATED_SLIPPAGE_PCT = 0.05      # Deslizamento médio de execução de book (0.05%)
 TOTAL_ORDER_COST_PCT = BINANCE_FEE_PCT + SIMULATED_SLIPPAGE_PCT # 0.15% por ponta
 
-# Pares Monitorados em Reais e Dólares
+# Pares Base Monitorados
 TARGET_PAIRS = [
     {"symbol": "SOLBRL", "name": "Solana (BRL)", "quote": "BRL"},
     {"symbol": "BTCBRL", "name": "Bitcoin (BRL)", "quote": "BRL"},
@@ -60,6 +61,7 @@ class BinanceSpotPaperEngine:
         self.risk_manager = RiskManager(initial_capital=INITIAL_BANKROLL_BRL)
         self.historical_analyzer = HistoricalMarketAnalyzer(TARGET_PAIRS)
         self.ai_contingency = AIMarketStudyContingency()
+        self.market_scanner = DynamicMarketScanner()
         self.state = self.load_state()
         self.state["super_skill"] = self.brain.state
         self.running = True
@@ -333,20 +335,24 @@ class BinanceSpotPaperEngine:
             self.save_state()
             return
 
-        # 4. Atualiza inteligência histórica (500 velas)
+        # 4. Escaneia mercado amplo da Binance (Top pares líquidos)
+        dynamic_targets = self.market_scanner.scan_full_market(max_pairs=12)
+        self.state["total_pairs_market"] = self.market_scanner.total_pairs_market
+        self.state["active_monitored_pairs_count"] = len(dynamic_targets)
+
+        # Atualiza inteligência histórica (500 velas)
+        self.historical_analyzer.target_pairs = dynamic_targets
         hist_data = self.historical_analyzer.run_full_historical_analysis()
         self.state["historical_analysis"] = hist_data.get("pairs", {})
 
         # 5. Escaneamento Multi-Timeframe (15m, 1h, 4h)
-        print("\n🔍 Escaneando oportunidades Multi-Timeframe (15m, 1h, 4h) nos pares Spot...")
+        print(f"\n🔍 Escaneando {len(dynamic_targets)} pares líquidos da Binance em Multi-Timeframe (15m, 1h, 4h)...")
+        has_cash_to_buy = self.state["cash_balance_brl"] >= ORDER_SIZE_BRL
         pair_studies = []
+        if not has_cash_to_buy:
+            print(f"ℹ️ Caixa atual (R$ {self.state['cash_balance_brl']:.2f}) aguardando fechamento de posições para novas compras. Continuando estudo do mercado...")
 
-        if self.state["cash_balance_brl"] < ORDER_SIZE_BRL:
-            self.state["current_thought"] = f"⏳ Saldo livre (R$ {self.state['cash_balance_brl']:.2f}) aguardando fechamento de posições para reinvestir."
-            self.save_state()
-            return
-
-        for target in TARGET_PAIRS:
+        for target in dynamic_targets:
             sym = target["symbol"]
 
             # Coleta dados nos 3 Timeframes
@@ -401,6 +407,9 @@ class BinanceSpotPaperEngine:
             print(f"   • {sym:<10}: R$/$ {price:<9.2f} | 15m RSI: {rsi_15m:<4.1f} | 1h RSI: {rsi_1h:<4.1f} | 4h: {trend_4h} | Gatilho: {matched_tf or 'Nenhum'}")
 
             if matched_tf:
+                if not has_cash_to_buy:
+                    continue
+
                 # 1. Filtro Histórico (evita comprar no topo da resistência)
                 hist_ok, hist_reason = self.historical_analyzer.evaluate_entry_safety(sym)
                 if not hist_ok:

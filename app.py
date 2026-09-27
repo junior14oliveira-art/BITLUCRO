@@ -43,7 +43,7 @@ def add_log(msg):
 # Worker em segundo plano (roda 24/7)
 def background_trading_loop():
     time.sleep(2)
-    add_log("Worker 24/7 em execução contínua. Intervalo de análise: 60s.")
+    add_log("Worker 24/7 em execução contínua. Intervalo de análise ágil: 25s.")
     while True:
         try:
             engine.run_cycle()
@@ -51,7 +51,7 @@ def background_trading_loop():
             add_log(f"Ciclo executado. Macro: {status} | Saldo: R$ {engine.state['cash_balance_brl']:.2f}")
         except Exception as e:
             add_log(f"Alerta no ciclo: {str(e)}")
-        time.sleep(60)
+        time.sleep(25)
 
 worker_thread = threading.Thread(target=background_trading_loop, daemon=True)
 worker_thread.start()
@@ -137,6 +137,10 @@ HTML_DASHBOARD = """
           <span class="font-bold text-emerald-400 uppercase tracking-wider text-[11px]" id="statusText">ONLINE 24H</span>
           <span class="text-slate-500">|</span>
           <span class="mono text-slate-400 text-[11px]" id="latencyBadge"><i class="fa-solid fa-bolt text-amber-400 text-[10px]"></i> 54ms</span>
+          <span class="text-slate-500 hidden md:inline">|</span>
+          <span class="text-amber-400 font-bold text-[11px] hidden md:flex items-center gap-1" id="pairsCountBadge" title="Varredura de todo o mercado Binance">
+            <i class="fa-solid fa-globe text-amber-400 text-[10px]"></i> <span id="pairsCountText">3.716 Pares</span>
+          </span>
         </div>
 
         <!-- Botão Pausar / Retomar (Heurística #3: Liberdade e Controle) -->
@@ -626,9 +630,9 @@ HTML_DASHBOARD = """
        SCRIPTS FRONTEND (ATUALIZAÇÃO REATIVA & REGRAS NIELSEN)
        ========================================== -->
   <script>
-    let countdown = 60;
+    let countdown = 25;
     setInterval(() => {
-      countdown = countdown > 1 ? countdown - 1 : 60;
+      countdown = countdown > 1 ? countdown - 1 : 25;
       const el = document.getElementById('countdownTimer');
       if (el) el.innerText = `${countdown}s`;
     }, 1000);
@@ -657,7 +661,7 @@ HTML_DASHBOARD = """
       try {
         await fetch('/api/reset', { method: 'POST' });
         toggleResetModal(false);
-        countdown = 60;
+        countdown = 25;
         await updateDashboard();
       } catch (err) {
         alert("Erro ao reiniciar: " + err);
@@ -696,9 +700,13 @@ HTML_DASHBOARD = """
         if (!res.ok) return;
         const data = await res.json();
 
-        // Latência
+        // Latência & Scanner
         if (data.api_latency_ms) {
           document.getElementById('latencyBadge').innerHTML = `<i class="fa-solid fa-bolt text-amber-400 text-[10px]"></i> ${data.api_latency_ms}ms`;
+        }
+        if (data.total_pairs_market) {
+          const pEl = document.getElementById('pairsCountText');
+          if (pEl) pEl.innerText = `${data.total_pairs_market.toLocaleString('pt-BR')} Pares`;
         }
 
         // Estado de Pausa
@@ -905,7 +913,7 @@ HTML_DASHBOARD = """
       btn.disabled = true;
       try {
         await fetch('/api/scan', { method: 'POST' });
-        countdown = 60;
+        countdown = 25;
         await updateDashboard();
       } catch (e) {
         console.error(e);

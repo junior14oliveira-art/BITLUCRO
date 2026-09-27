@@ -1,0 +1,103 @@
+{
+  "total_pairs_market": 3716,
+  "selected_count": 12,
+  "last_scan_time": "26/09/2026 23:10:18",
+  "pairs": [
+    {
+      "symbol": "BTCUSDT",
+      "name": "BTC (USDT)",
+      "quote": "USDT",
+      "price": 84523.19,
+      "change_24h_pct": 0.58,
+      "volume_quote": 657450663.3232098
+    },
+    {
+      "symbol": "ZECUSDT",
+      "name": "ZEC (USDT)",
+      "quote": "USDT",
+      "price": 1644.35,
+      "change_24h_pct": 6.368,
+      "volume_quote": 255456745.87366
+    },
+    {
+      "symbol": "ETHUSDT",
+      "name": "ETH (USDT)",
+      "quote": "USDT",
+      "price": 2703.02,
+      "change_24h_pct": 0.409,
+      "volume_quote": 245214036.991851
+    },
+    {
+      "symbol": "SOLUSDT",
+      "name": "SOL (USDT)",
+      "quote": "USDT",
+      "price": 121.6,
+      "change_24h_pct": -0.401,
+      "volume_quote": 214663047.50966
+    },
+    {
+      "symbol": "XRPUSDT",
+      "name": "XRP (USDT)",
+      "quote": "USDT",
+      "price": 1.5277,
+      "change_24h_pct": -2.886,
+      "volume_quote": 178584025.64727
+    },
+    {
+      "symbol": "NEARUSDT",
+      "name": "NEAR (USDT)",
+      "quote": "USDT",
+      "price": 5.148,
+      "change_24h_pct": 5.104,
+      "volume_quote": 131409711.6012
+    },
+    {
+      "symbol": "SUIUSDT",
+      "name": "SUI (USDT)",
+      "quote": "USDT",
+      "price": 1.1871,
+      "change_24h_pct": 0.815,
+      "volume_quote": 79993858.72117
+    },
+    {
+      "symbol": "WLDUSDT",
+      "name": "WLD (USDT)",
+      "quote": "USDT",
+      "price": 0.5228,
+      "change_24h_pct": 7.241,
+      "volume_quote": 72449770.311
+    },
+    {
+      "symbol": "ENAUSDT",
+      "name": "ENA (USDT)",
+      "quote": "USDT",
+      "price": 0.2705,
+      "change_24h_pct": 2.385,
+      "volume_quote": 72320281.275633
+    },
+    {
+      "symbol": "TAOUSDT",
+      "name": "TAO (USDT)",
+      "quote": "USDT",
+      "price": 324.1,
+      "change_24h_pct": 2.563,
+      "volume_quote": 57760792.88406
+    },
+    {
+      "symbol": "UNIUSDT",
+      "name": "UNI (USDT)",
+      "quote": "USDT",
+      "price": 9.848,
+      "change_24h_pct": 3.369,
+      "volume_quote": 54958867.13651
+    },
+    {
+      "symbol": "BABYUSDT",
+      "name": "BABY (USDT)",
+      "quote": "USDT",
+      "price": 0.01434,
+      "change_24h_pct": 7.416,
+      "volume_quote": 52234168.22096
+    }
+  ]
+}
