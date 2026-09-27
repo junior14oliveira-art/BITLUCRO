@@ -948,6 +948,8 @@ HTML_DASHBOARD = """
         icon.className = "fa-solid fa-pause";
         label.innerText = "Pausar";
       }
+    }
+
     function formatPrice(val, symbol) {
       if (val === undefined || val === null || isNaN(val)) return '--';
       const num = parseFloat(val);
