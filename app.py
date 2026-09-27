@@ -70,6 +70,20 @@ def fast_pnl_tracker_loop():
 pnl_thread = threading.Thread(target=fast_pnl_tracker_loop, daemon=True)
 pnl_thread.start()
 
+# Keep-Alive Automático para evitar que o Render hiberne (a cada 10 minutos)
+def keep_alive_self_ping():
+    time.sleep(60)
+    render_url = os.environ.get("RENDER_EXTERNAL_URL", "https://bitlucro-spot-bot.onrender.com")
+    while True:
+        try:
+            requests.get(f"{render_url}/health", timeout=10)
+        except Exception:
+            pass
+        time.sleep(600)
+
+ping_thread = threading.Thread(target=keep_alive_self_ping, daemon=True)
+ping_thread.start()
+
 HTML_DASHBOARD = """
 <!DOCTYPE html>
 <html lang="pt-BR" class="dark">
