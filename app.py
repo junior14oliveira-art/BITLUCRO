@@ -10,7 +10,7 @@ import json
 import time
 import threading
 from datetime import datetime
-from flask import Flask, jsonify, render_template_string, request
+from flask import Flask, jsonify, render_template_string, request, Response
 
 # Configuração de encoding para UTF-8 seguro
 if sys.platform == 'win32':
@@ -196,10 +196,16 @@ HTML_DASHBOARD = """
         </button>
 
         <!-- Botão Modelos IA (Contingência) -->
-        <button onclick="toggleAiModal(true)" class="text-xs bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold px-2.5 py-1.5 rounded-lg flex items-center space-x-1.5 transition" title="Modelos de IA & Contingência 24/7">
-          <i class="fa-solid fa-server text-emerald-400"></i>
+        <button onclick="toggleAiModal(true)" class="text-xs bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold px-2.5 py-1.5 rounded-lg flex items-center space-x-1.5 transition" title="Modelos de IA & Contingência 24/7">
+          <i class="fa-solid fa-server text-purple-400"></i>
           <span>Modelos IA</span>
         </button>
+
+        <!-- Botão Baixar Excel -->
+        <a href="/api/export/excel" download class="text-xs bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 font-bold px-2.5 py-1.5 rounded-lg flex items-center space-x-1.5 transition shadow" title="Baixar Dados em Excel (CSV)">
+          <i class="fa-solid fa-file-excel text-emerald-400"></i>
+          <span>Baixar Excel</span>
+        </a>
 
         <!-- Botão Guia / FAQ (Heurística #10) -->
         <button onclick="toggleHelpModal(true)" class="hidden sm:flex text-xs bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/80 font-semibold px-2.5 py-1.5 rounded-lg items-center space-x-1 transition" title="Guia e Princípios de Operação">
@@ -369,10 +375,14 @@ HTML_DASHBOARD = """
             <span class="text-slate-500">Cérebro da Análise:</span>
             <span class="font-mono font-bold text-amber-400" id="thoughtSourceModel">Motor Quantitativo Local (Heurístico 24/7)</span>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
             <span class="text-emerald-400 font-semibold flex items-center gap-1"><i class="fa-solid fa-shield-check"></i> Contingência Ativa</span>
             <span class="text-slate-600">|</span>
-            <button onclick="toggleAiModal(true)" class="text-purple-400 hover:text-purple-300 font-bold underline">Configurar Outras APIs Grátis</button>
+            <a href="/api/export/excel" download class="text-[11px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded font-bold transition flex items-center gap-1 shadow">
+              <i class="fa-solid fa-file-excel text-emerald-400"></i> Baixar Dados (Excel)
+            </a>
+            <span class="text-slate-600">|</span>
+            <button onclick="toggleAiModal(true)" class="text-purple-400 hover:text-purple-300 font-bold underline">APIs Grátis</button>
           </div>
         </div>
       </div>
@@ -678,7 +688,9 @@ HTML_DASHBOARD = """
       </div>
 
       <div class="pt-2 flex items-center justify-between border-t border-bordercol text-[11px] text-slate-400">
-        <span>Amostra: <b class="text-slate-200">500 velas de 1h por ativo</b></span>
+        <a href="/api/export/excel" download class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg transition shadow flex items-center gap-1.5">
+          <i class="fa-solid fa-file-excel"></i> Baixar Relatório Excel (.CSV)
+        </a>
         <button onclick="toggleHistoryModal(false)" class="text-xs bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2 rounded-lg transition shadow">
           Fechar
         </button>
@@ -1216,6 +1228,23 @@ def get_ai_status():
         "active_provider": engine.ai_contingency.active_provider,
         "providers": engine.ai_contingency.get_providers_status()
     })
+
+@app.route('/api/export/excel')
+@app.route('/api/export/csv')
+def export_excel():
+    try:
+        csv_data = engine.generate_export_csv()
+        filename = f"BITLUCRO_Relatorio_Quant_IA_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        return Response(
+            csv_data,
+            mimetype="text/csv; charset=utf-8",
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}",
+                "Content-Type": "text/csv; charset=utf-8"
+            }
+        )
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/scan', methods=['POST'])
 def manual_scan():

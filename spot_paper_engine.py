@@ -471,6 +471,117 @@ class BinanceSpotPaperEngine:
         self.state["super_skill"] = self.brain.state
         self.save_state()
 
+    def update_open_positions_pnl(self):
+        """Alias para atualização rápida de PnL e Take Profit."""
+        self.update_open_positions()
+
+    def generate_export_csv(self):
+        """
+        Gera um relatório completo em formato CSV compatível com Excel (separador ';' e UTF-8 com BOM),
+        contendo enriquecimento de dados: Indicadores Multi-Timeframe, Inteligência Histórica,
+        Machine Learning Score, Diagnóstico da IA e Trades Realizados.
+        """
+        import io
+        output = io.StringIO()
+        
+        # UTF-8 BOM para o Microsoft Excel abrir com acentuação e formatação perfeita
+        output.write('\ufeff')
+        
+        now_str = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        output.write("# RELATÓRIO QUANTITATIVO BITLUCRO - INTELIGÊNCIA ARTIFICIAL E MACHINE LEARNING\n")
+        output.write(f"# Data e Hora da Extração:;{now_str}\n")
+        output.write(f"# Modelo de IA Ativo:;{self.ai_contingency.active_provider}\n")
+        output.write(f"# Tendência Macro Bitcoin:;{self.state.get('last_macro_status', 'N/A')}\n")
+        thought_clean = str(self.state.get('current_thought', '')).replace(';', ',').replace('\n', ' ')
+        output.write(f"# Pensamento Atual do Robô:;\"{thought_clean}\"\n\n")
+        
+        # TABELA 1: ENRIQUECIMENTO DE DADOS POR CRIPTOMOEDA (MACHINE LEARNING + DADOS HISTÓRICOS)
+        output.write("TABELA 1: ANÁLISE QUANTITATIVA E MACHINE LEARNING DOS ATIVOS\n")
+        headers = [
+            "Par", "Nome", "Cotação Atual", "Suporte 21D", "Resistência 21D", 
+            "Posição no Canal (%)", "Win Rate Histórico (+2%)", "Tempo Médio Lucro (h)",
+            "Score Machine Learning (%)", "Veredito Machine Learning", "Amostras Testadas",
+            "Acertos Históricos", "Diagnóstico Técnico"
+        ]
+        output.write(";".join(headers) + "\n")
+        
+        pairs_dict = self.historical_analyzer.data.get("pairs", {})
+        for sym, item in pairs_dict.items():
+            try:
+                ml = self.ml_predictor.train_and_evaluate_symbol(sym)
+            except Exception:
+                ml = {"confidence_score_pct": 50.0, "verdict": "N/A", "historical_samples": 0, "historical_hits": 0, "explanation": ""}
+
+            row = [
+                str(sym),
+                str(item.get("name", sym)),
+                f"{item.get('current_price', 0):.4f}".replace('.', ','),
+                f"{item.get('support_price', 0):.4f}".replace('.', ','),
+                f"{item.get('resistance_price', 0):.4f}".replace('.', ','),
+                f"{item.get('range_position_pct', 0):.1f}%".replace('.', ','),
+                f"{item.get('historical_win_rate_pct', 0):.1f}%".replace('.', ','),
+                f"{item.get('avg_hours_to_tp', 0):.1f}h".replace('.', ','),
+                f"{ml.get('confidence_score_pct', 0):.1f}%".replace('.', ','),
+                str(ml.get("verdict", "N/A")),
+                str(ml.get("historical_samples", 0)),
+                str(ml.get("historical_hits", 0)),
+                f"\"{str(ml.get('explanation', '')).replace(';', ',')}\""
+            ]
+            output.write(";".join(row) + "\n")
+            
+        output.write("\n\n")
+        
+        # TABELA 2: POSIÇÕES EM CUSTÓDIA SPOT (EM ANDAMENTO)
+        output.write("TABELA 2: ATIVOS EM CUSTÓDIA SPOT (POSIÇÕES EM ANDAMENTO)\n")
+        pos_headers = [
+            "Timeframe", "Par", "Data/Hora Entrada", "Preço Compra", "Cotação Atual",
+            "Alvo (+2%)", "Rentabilidade Atual (%)", "Taxa Binance Paga (BRL)", "Valor Alocado (BRL)", "Score ML"
+        ]
+        output.write(";".join(pos_headers) + "\n")
+        
+        for pos in self.state.get("open_positions", []):
+            cur_p = pos.get("current_price", pos["entry_price"])
+            pnl = ((cur_p - pos["entry_price"]) / pos["entry_price"]) * 100
+            row = [
+                str(pos.get("timeframe", "1H")),
+                str(pos["symbol"]),
+                str(pos.get("entry_time", "")),
+                f"{pos['entry_price']:.4f}".replace('.', ','),
+                f"{cur_p:.4f}".replace('.', ','),
+                f"{pos.get('target_price', 0):.4f}".replace('.', ','),
+                f"{pnl:+.2f}%".replace('.', ','),
+                f"R$ {pos.get('buy_fee_brl', 0):.3f}".replace('.', ','),
+                f"R$ {pos.get('stake_brl', 10):.2f}".replace('.', ','),
+                f"{pos.get('ml_score', 'N/A')}%".replace('.', ',')
+            ]
+            output.write(";".join(row) + "\n")
+            
+        output.write("\n\n")
+        
+        # TABELA 3: HISTÓRICO DE TRADES FINALIZADOS COM LUCRO
+        output.write("TABELA 3: HISTÓRICO DE TRADES FINALIZADOS COM LUCRO (FECHADOS)\n")
+        trade_headers = [
+            "Timeframe", "Par", "Data/Hora Saída", "Preço Entrada", "Preço Saída",
+            "Lucro Bruto (BRL)", "Taxas Corretora (BRL)", "Lucro Líquido Real (BRL)", "Retorno (%)"
+        ]
+        output.write(";".join(trade_headers) + "\n")
+        
+        for trade in self.state.get("closed_trades", []):
+            row = [
+                str(trade.get("timeframe", "1H")),
+                str(trade["symbol"]),
+                str(trade.get("exit_time", "")),
+                f"{trade.get('entry_price', 0):.4f}".replace('.', ','),
+                f"{trade.get('exit_price', 0):.4f}".replace('.', ','),
+                f"R$ {trade.get('gross_profit_brl', 0):.2f}".replace('.', ','),
+                f"R$ {trade.get('fees_paid_brl', 0):.3f}".replace('.', ','),
+                f"R$ {trade.get('net_profit_brl', 0):.2f}".replace('.', ','),
+                f"{trade.get('profit_pct', 0):+.2f}%".replace('.', ',')
+            ]
+            output.write(";".join(row) + "\n")
+            
+        return output.getvalue()
+
 if __name__ == '__main__':
     engine = BinanceSpotPaperEngine()
     engine.run_cycle()

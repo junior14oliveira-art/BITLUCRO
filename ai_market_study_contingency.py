@@ -217,7 +217,7 @@ class AIMarketStudyContingency:
 
     def _generate_quantitative_thought(self, pair_data, macro_status, open_positions, total_equity):
         """Motor quantitativo inteligente embutido: sem limites de API, opera 24/7 de forma infalível."""
-        now_str = datetime.now().strftime("%H:%M")
+        now_str = datetime.now().strftime("%H:%M:%S")
         
         is_bull = "BULL" in macro_status
         macro_text = "tendência macro de alta consolidada (BTC acima da SMA 200)" if is_bull else "correção macro global defensiva"
