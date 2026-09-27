@@ -188,18 +188,22 @@ HTML_DASHBOARD = """
         <i class="fa-solid fa-shield-halved text-base"></i>
         <span>BLINDAGEM QUANTITATIVA (3 LEIS DE OURO):</span>
       </div>
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full md:w-auto text-slate-300">
-        <div class="bg-darkbg/90 px-3 py-1.5 rounded-lg border border-slate-800 flex items-center space-x-2">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full md:w-auto text-slate-300">
+        <div class="bg-darkbg/90 px-2.5 py-1.5 rounded-lg border border-slate-800 flex items-center space-x-1.5">
           <span class="text-amber-400 font-extrabold">#1</span>
-          <span>Multi-Timeframe (15m, 1h, 4h)</span>
+          <span>Multi-TF (15m, 1h, 4h)</span>
         </div>
-        <div class="bg-darkbg/90 px-3 py-1.5 rounded-lg border border-slate-800 flex items-center space-x-2">
+        <div class="bg-darkbg/90 px-2.5 py-1.5 rounded-lg border border-slate-800 flex items-center space-x-1.5">
           <span class="text-emerald-400 font-extrabold">#2</span>
-          <span>Spot Real (Sem Liquidação)</span>
+          <span>Spot (Sem Liquidação)</span>
         </div>
-        <div class="bg-darkbg/90 px-3 py-1.5 rounded-lg border border-slate-800 flex items-center space-x-2">
+        <div class="bg-darkbg/90 px-2.5 py-1.5 rounded-lg border border-slate-800 flex items-center space-x-1.5">
           <span class="text-blue-400 font-extrabold">#3</span>
-          <span>BTC > SMA 200 (Tendência Macro)</span>
+          <span>BTC > SMA 200 Macro</span>
+        </div>
+        <div class="bg-darkbg/90 px-2.5 py-1.5 rounded-lg border border-slate-800 flex items-center space-x-1.5">
+          <span class="text-purple-400 font-extrabold">#4</span>
+          <span>Machine Learning (>65%)</span>
         </div>
       </div>
     </div>
@@ -766,6 +770,7 @@ HTML_DASHBOARD = """
                   <div class="font-bold text-white text-xs flex items-center gap-1.5">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                     ${pos.symbol}
+                    ${pos.ml_score ? `<span class="bg-purple-500/20 text-purple-300 font-mono text-[9px] px-1 rounded font-bold" title="Score Machine Learning">ML ${pos.ml_score}%</span>` : ''}
                   </div>
                   <div class="text-[10px] text-slate-400">${pos.name || ''}</div>
                 </td>
@@ -816,6 +821,7 @@ HTML_DASHBOARD = """
               let badgeColor = 'bg-slate-800 text-slate-300';
               if (l.type === 'COMPRA_EXECUTADA') badgeColor = 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
               else if (l.type === 'TAKE_PROFIT') badgeColor = 'bg-amber-500/20 text-amber-400 border border-amber-500/30';
+              else if (l.type === 'ML_BLOCK') badgeColor = 'bg-purple-500/20 text-purple-300 border border-purple-500/30';
               else if (l.type === 'RISK_BLOCK' || l.type === 'FILTRO_HISTORICO') badgeColor = 'bg-rose-500/20 text-rose-400 border border-rose-500/30';
               else if (l.type === 'MACRO_DEFESA') badgeColor = 'bg-blue-500/20 text-blue-400 border border-blue-500/30';
               return `

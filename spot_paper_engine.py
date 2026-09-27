@@ -33,6 +33,7 @@ from risk_manager import RiskManager
 from historical_market_analyzer import HistoricalMarketAnalyzer
 from ai_market_study_contingency import AIMarketStudyContingency
 from dynamic_market_scanner import DynamicMarketScanner
+from ml_quant_predictor import MLQuantPredictor
 
 BINANCE_API_URL = "https://api.binance.com/api/v3"
 
@@ -62,6 +63,7 @@ class BinanceSpotPaperEngine:
         self.historical_analyzer = HistoricalMarketAnalyzer(TARGET_PAIRS)
         self.ai_contingency = AIMarketStudyContingency()
         self.market_scanner = DynamicMarketScanner()
+        self.ml_predictor = MLQuantPredictor(target_profit_pct=TAKE_PROFIT_PCT, min_confidence_threshold=0.65)
         self.state = self.load_state()
         self.state["super_skill"] = self.brain.state
         self.running = True
@@ -410,19 +412,26 @@ class BinanceSpotPaperEngine:
                 if not has_cash_to_buy:
                     continue
 
-                # 1. Filtro Histórico (evita comprar no topo da resistência)
+                # 1. Filtro de Inteligência Machine Learning (Previsão de Probabilidade)
+                ml_res = self.ml_predictor.train_and_evaluate_symbol(sym)
+                if not ml_res.get("ml_approved", True):
+                    self.add_detailed_log("ML_BLOCK", f"{sym} barrado pelo ML ({ml_res['confidence_score_pct']}% prob.): {ml_res.get('verdict')}")
+                    print(f"   ⚠️ [Machine Learning]: {sym} barrado ({ml_res['confidence_score_pct']}% prob).")
+                    continue
+
+                # 2. Filtro Histórico (evita comprar no topo da resistência)
                 hist_ok, hist_reason = self.historical_analyzer.evaluate_entry_safety(sym)
                 if not hist_ok:
                     self.add_detailed_log("FILTRO_HISTORICO", f"{sym} bloqueado: {hist_reason}")
                     continue
 
-                # 2. Risk Manager
+                # 3. Risk Manager
                 allowed, risk_reason, risk_status = self.risk_manager.evaluate_order(self.state, sym, ORDER_SIZE_BRL)
                 if not allowed:
                     self.add_detailed_log("RISK_BLOCK", f"Ordem de {sym} bloqueada pelo Risk Manager: {risk_reason}")
                     continue
 
-                # 3. Execução com Desconto de Taxas Reais da Binance
+                # 4. Execução com Desconto de Taxas Reais da Binance
                 buy_fee_brl = round(ORDER_SIZE_BRL * (TOTAL_ORDER_COST_PCT / 100.0), 4) # Taxa 0.10% + 0.05% slippage
                 target_profit_price = price * (1 + (TAKE_PROFIT_PCT / 100.0))
 
@@ -440,11 +449,12 @@ class BinanceSpotPaperEngine:
                     "buy_fee_brl": buy_fee_brl,
                     "current_price": price,
                     "current_pnl_pct": 0.0,
-                    "reason": f"[{matched_tf}] {setup_desc}"
+                    "ml_score": ml_res.get("confidence_score_pct", 75.0),
+                    "reason": f"[{matched_tf}] {setup_desc} (ML: {ml_res.get('confidence_score_pct')}%)"
                 }
                 self.state["open_positions"].append(new_position)
-                self.add_detailed_log("COMPRA_EXECUTADA", f"[{matched_tf}] Compra de R$ 10 em {sym} a {price:.4f}. Taxa Binance descontada: R$ {buy_fee_brl:.3f}.")
-                print(f"\n🛒 [COMPRA EXECUTADA SPOT ({matched_tf})]: R$ {ORDER_SIZE_BRL:.2f} de {sym} a {price:.4f}!")
+                self.add_detailed_log("COMPRA_EXECUTADA", f"[{matched_tf}] Compra de R$ 10 em {sym} a {price:.4f} [ML Score: {ml_res.get('confidence_score_pct')}%]. Taxa: R$ {buy_fee_brl:.3f}.")
+                print(f"\n🛒 [COMPRA EXECUTADA SPOT ({matched_tf})]: R$ {ORDER_SIZE_BRL:.2f} de {sym} a {price:.4f} [ML: {ml_res.get('confidence_score_pct')}%]!")
                 print(f"💸 Taxa Binance Descontada: R$ {buy_fee_brl:.3f} | Alvo Líquido (+2%): {target_profit_price:.4f}")
                 self.save_state()
                 break

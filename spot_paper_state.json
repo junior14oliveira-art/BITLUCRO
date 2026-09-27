@@ -1,10 +1,10 @@
 {
   "mode": "PAPER_TRADING_SPOT",
   "initial_capital_brl": 50.0,
-  "cash_balance_brl": 30.0,
-  "total_equity_brl": 50.03,
+  "cash_balance_brl": 9.969999999999999,
+  "total_equity_brl": 49.98,
   "accumulated_profit_brl": 0.0,
-  "profit_pct": 0.06,
+  "profit_pct": -0.04,
   "open_positions": [
     {
       "symbol": "SOLBRL",
@@ -13,8 +13,8 @@
       "entry_price": 628.1,
       "target_price": 640.662,
       "stake_brl": 10.0,
-      "current_price": 630.7,
-      "current_pnl_pct": 0.41,
+      "current_price": 628.1,
+      "current_pnl_pct": 0.0,
       "reason": "RSI 1H (45.1) + Alinhamento EMA9/21"
     },
     {
@@ -24,26 +24,53 @@
       "entry_price": 439280.0,
       "target_price": 448065.6,
       "stake_brl": 10.0,
-      "current_price": 438947.0,
-      "current_pnl_pct": -0.08,
+      "current_price": 439148.0,
+      "current_pnl_pct": -0.03,
       "reason": "RSI 1H (60.6) + Alinhamento EMA9/21 (ALTA ↗)"
+    },
+    {
+      "symbol": "BTCUSDT",
+      "name": "BTC (USDT)",
+      "timeframe": "1H",
+      "entry_time": "26/09 23:10:19",
+      "entry_price": 84523.19,
+      "target_price": 86213.6538,
+      "stake_brl": 10.0,
+      "buy_fee_brl": 0.015,
+      "current_price": 84494.0,
+      "current_pnl_pct": -0.03,
+      "reason": "[1H] Swing Pullback 1H (RSI 68.3 + EMA9/21 ALTA ↗)"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "name": "ETH (USDT)",
+      "timeframe": "1H",
+      "entry_time": "26/09 23:17:37",
+      "entry_price": 2703.16,
+      "target_price": 2757.2232,
+      "stake_brl": 10.0,
+      "buy_fee_brl": 0.015,
+      "current_price": 2703.16,
+      "current_pnl_pct": 0.0,
+      "ml_score": 66.7,
+      "reason": "[1H] Swing Pullback 1H (RSI 62.6 + EMA9/21 ALTA ↗) (ML: 66.7%)"
     }
   ],
   "closed_trades": [],
   "win_count": 0,
   "loss_count": 0,
-  "last_macro_status": "BULL 🟢 (BTC: $84,460 > SMA200: $71,109)",
-  "current_thought": "[23:04] Mercado operando com tendência macro de alta consolidada (BTC acima da SMA 200). Custódia ativa em SOLBRL (PnL: +0.41%) aguardando alvo programado de +2.0%. Escaneando confluência multi-tempo (15m, 1h e 4h) sem pressa, preservando capital.",
-  "last_update": "26/09/2026 23:04:21",
+  "last_macro_status": "BULL 🟢 (BTC: $84,494 > SMA200: $71,109)",
+  "current_thought": "[23:17] Mercado operando com tendência macro de alta consolidada (BTC acima da SMA 200). Custódia ativa em SOLBRL (PnL: +0.00%) aguardando alvo programado de +2.0%. Observando oportunidade imediata em ZECUSDT em recuo saudável (RSI 36.3).",
+  "last_update": "26/09/2026 23:17:37",
   "is_paused": false,
-  "api_latency_ms": 1062,
+  "api_latency_ms": 7990,
   "super_skill": {
     "skill_name": "BITLUCRO Quantitative Spot Playbook",
     "version": "1.0.0",
     "brain_level": 1,
     "level_title": "Analista Quantitativo Júnior",
-    "total_cycles_studied": 2,
-    "hours_studied": 0.0,
+    "total_cycles_studied": 4,
+    "hours_studied": 0.1,
     "patterns_identified": 0,
     "key_learnings": [
       {
@@ -66,15 +93,32 @@
       }
     ],
     "last_observations": [
+      "[23:17:37] BTCUSDT: RSI None | Preço R$/$ 84494.01 | Tendência: ALTA ↗.",
+      "[23:10:19] BTCUSDT: RSI None | Preço R$/$ 84523.19 | Tendência: ALTA ↗.",
       "[23:04:21] SOLBRL: RSI None | Preço R$/$ 630.70 | Tendência: ALTA ↗.",
       "[22:52:42] SOLBRL: RSI 50.6 | Preço R$/$ 631.20 | Tendência: ALTA ↗."
     ],
-    "last_update": "26/09/2026 23:04:21"
+    "last_update": "26/09/2026 23:17:37"
   },
-  "total_fees_paid_brl": 0.0,
+  "total_fees_paid_brl": 0.03,
   "gross_profit_brl": 0.0,
   "active_ai_provider": "Motor Quantitativo Heurístico (Infalível 24/7)",
   "detailed_logs": [
+    {
+      "time": "23:17:37",
+      "type": "COMPRA_EXECUTADA",
+      "msg": "[1H] Compra de R$ 10 em ETHUSDT a 2703.1600 [ML Score: 66.7%]. Taxa: R$ 0.015."
+    },
+    {
+      "time": "23:17:30",
+      "type": "ML_BLOCK",
+      "msg": "ZECUSDT barrado pelo ML (60.4% prob.): [REJEITADO ML - RISCO/TOPO]"
+    },
+    {
+      "time": "23:10:19",
+      "type": "COMPRA_EXECUTADA",
+      "msg": "[1H] Compra de R$ 10 em BTCUSDT a 84523.1900. Taxa Binance descontada: R$ 0.015."
+    },
     {
       "time": "23:04:21",
       "type": "FILTRO_HISTORICO",
@@ -157,5 +201,7 @@
       "status": "EXCELENTE",
       "name": "Render"
     }
-  }
+  },
+  "total_pairs_market": 3716,
+  "active_monitored_pairs_count": 12
 }
