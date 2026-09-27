@@ -583,6 +583,7 @@ HTML_DASHBOARD = """
       </div>
 
     </div>
+    </div>
     <!-- FIM DO MODO SIMULADOR -->
 
     <!-- ==========================================
