@@ -1038,7 +1038,7 @@ HTML_DASHBOARD = """
             pTable.innerHTML = positions.map(pos => {
               const pnl = pos.current_pnl_pct || 0;
               const isProfit = pnl >= 0;
-              const pnlClass = isProfit ? 'text-emerald-400 bg-emerald-500/10' : 'text-amber-400 bg-amber-500/10';
+              const pnlClass = isProfit ? 'text-emerald-400 bg-emerald-500/10' : 'text-rose-400 bg-rose-500/10';
               const curPrice = pos.current_price || pos.entry_price;
               const tf = pos.timeframe || '1H';
               const tfBadge = tf === '15m' ? '<span class="bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded font-bold text-[10px]">15m</span>' : (tf === '4H' ? '<span class="bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded font-bold text-[10px]">4H</span>' : '<span class="bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded font-bold text-[10px]">1H</span>');
@@ -1078,7 +1078,7 @@ HTML_DASHBOARD = """
             mCards.innerHTML = positions.map(pos => {
               const pnl = pos.current_pnl_pct || 0;
               const isProfit = pnl >= 0;
-              const pnlClass = isProfit ? 'text-emerald-400 bg-emerald-500/15 border border-emerald-500/30' : 'text-amber-400 bg-amber-500/15 border border-amber-500/30';
+              const pnlClass = isProfit ? 'text-emerald-400 bg-emerald-500/15 border border-emerald-500/30' : 'text-rose-400 bg-rose-500/15 border border-rose-500/30';
               const curPrice = pos.current_price || pos.entry_price;
               const tf = pos.timeframe || '1H';
               const tfBadge = tf === '15m' ? '<span class="bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded font-bold text-[10px]">15m</span>' : (tf === '4H' ? '<span class="bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded font-bold text-[10px]">4H</span>' : '<span class="bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded font-bold text-[10px]">1H</span>');
@@ -1338,12 +1338,12 @@ HTML_DASHBOARD = """
           
           if (pnlEl) {
             pnlEl.innerText = pnlText;
-            pnlEl.className = `px-2 py-0.5 rounded font-mono font-bold text-[11px] transition-all duration-300 ${isProfit ? 'text-emerald-400 bg-emerald-500/10' : 'text-amber-400 bg-amber-500/10'}`;
+            pnlEl.className = `px-2 py-0.5 rounded font-mono font-bold text-[11px] transition-all duration-300 ${isProfit ? 'text-emerald-400 bg-emerald-500/10' : 'text-rose-400 bg-rose-500/10'}`;
           }
 
           if (pnlMobEl) {
             pnlMobEl.innerText = pnlText;
-            pnlMobEl.className = `px-2.5 py-1 rounded-lg font-mono font-black text-xs transition-all duration-300 ${isProfit ? 'text-emerald-400 bg-emerald-500/15 border border-emerald-500/30' : 'text-amber-400 bg-amber-500/15 border border-amber-500/30'}`;
+            pnlMobEl.className = `px-2.5 py-1 rounded-lg font-mono font-black text-xs transition-all duration-300 ${isProfit ? 'text-emerald-400 bg-emerald-500/15 border border-emerald-500/30' : 'text-rose-400 bg-rose-500/15 border border-rose-500/30'}`;
           }
         });
       } catch (err) {
