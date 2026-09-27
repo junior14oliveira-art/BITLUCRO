@@ -1,7 +1,12 @@
 """
 BITLUCRO - Motor de Estudo de Mercado com Contingência Ampla de Modelos de IA
-Funciona 24 horas por dia sem parar:
-Cascata: Google Gemini -> Groq AI -> Motor Quantitativo Autônomo Local
+Funciona 24 horas por dia com cascata de inteligência artificial:
+1. Google Gemini 2.5 Flash (Gratuito via Google AI Studio)
+2. Groq AI - Llama 3.3 70B (Gratuito via console.groq.com)
+3. OpenRouter Free - Llama 3.3 / DeepSeek :free (Gratuito via openrouter.ai)
+4. Cerebras Cloud - Llama 3.1 70B (Gratuito via cloud.cerebras.ai)
+5. SambaNova Cloud - Llama 3.3 70B (Gratuito via cloud.sambanova.ai)
+6. Motor Quantitativo Heurístico Local (Infalível 24/7, sem custos e sem internet externa)
 """
 
 import os
@@ -13,35 +18,116 @@ class AIMarketStudyContingency:
     def __init__(self):
         self.gemini_key = os.environ.get("GEMINI_API_KEY", "")
         self.groq_key = os.environ.get("GROQ_API_KEY", "")
-        self.active_provider = "Motor Quantitativo Local (Zero Downtime)"
+        self.openrouter_key = os.environ.get("OPENROUTER_API_KEY", "")
+        self.cerebras_key = os.environ.get("CEREBRAS_API_KEY", "")
+        self.sambanova_key = os.environ.get("SAMBANOVA_API_KEY", "")
+        self.active_provider = "Motor Quantitativo Local (Heurístico 24/7)"
+
+    def get_providers_status(self):
+        """Retorna o status de configuração de cada um dos provedores de IA suportados."""
+        return [
+            {
+                "name": "Google Gemini 2.5 Flash",
+                "env_var": "GEMINI_API_KEY",
+                "configured": bool(self.gemini_key),
+                "speed": "Ultra Rápido (~600ms)",
+                "tier": "Gratuito (15 RPM)"
+            },
+            {
+                "name": "Groq Cloud (Llama 3.3 70B)",
+                "env_var": "GROQ_API_KEY",
+                "configured": bool(self.groq_key),
+                "speed": "Hiper Rápido (~250ms)",
+                "tier": "Gratuito (30 RPM)"
+            },
+            {
+                "name": "OpenRouter (DeepSeek / Llama :free)",
+                "env_var": "OPENROUTER_API_KEY",
+                "configured": bool(self.openrouter_key),
+                "speed": "Rápido (~800ms)",
+                "tier": "Modelos 100% Gratuitos"
+            },
+            {
+                "name": "Cerebras Cloud (Llama 3.1 70B)",
+                "env_var": "CEREBRAS_API_KEY",
+                "configured": bool(self.cerebras_key),
+                "speed": "Hiper Rápido (~200ms)",
+                "tier": "Gratuito (1M tokens/dia)"
+            },
+            {
+                "name": "SambaNova Cloud (Llama 3.3 70B)",
+                "env_var": "SAMBANOVA_API_KEY",
+                "configured": bool(self.sambanova_key),
+                "speed": "Hiper Rápido (~300ms)",
+                "tier": "Gratuito"
+            },
+            {
+                "name": "Motor Quantitativo Local",
+                "env_var": "AUTOMÁTICO / EMBUTIDO",
+                "configured": True,
+                "speed": "Instantâneo (0ms)",
+                "tier": "Infalível 24/7 (Custo R$ 0,00)"
+            }
+        ]
 
     def generate_market_thought(self, pair_data, macro_status, open_positions, total_equity):
         """
         Gera um raciocínio detalhado em linguagem natural sobre o estado atual do mercado,
-        utilizando a cascata de contingência para garantir operação contínua 24h.
+        utilizando a cascata ampla de contingência para garantir operação contínua 24h.
         """
-        # Tenta 1: Google Gemini (se chave presente)
+        # 1. Google Gemini (se chave configurada)
         if self.gemini_key:
             thought = self._try_gemini(pair_data, macro_status, open_positions)
             if thought:
                 self.active_provider = "Google Gemini 2.5 Flash"
                 return thought, self.active_provider
 
-        # Tenta 2: Groq AI (se chave presente)
+        # 2. Groq AI (se chave configurada)
         if self.groq_key:
             thought = self._try_groq(pair_data, macro_status, open_positions)
             if thought:
                 self.active_provider = "Groq Llama 3.3 70B"
                 return thought, self.active_provider
 
-        # Tenta 3 / Fallback Definitivo: Motor Quantitativo Matemático Autônomo
-        self.active_provider = "Motor Quantitativo Heurístico (Infalível 24/7)"
+        # 3. OpenRouter Free (se chave configurada)
+        if self.openrouter_key:
+            thought = self._try_openrouter(pair_data, macro_status, open_positions)
+            if thought:
+                self.active_provider = "OpenRouter (Llama 3.3 :free)"
+                return thought, self.active_provider
+
+        # 4. Cerebras Cloud (se chave configurada)
+        if self.cerebras_key:
+            thought = self._try_cerebras(pair_data, macro_status, open_positions)
+            if thought:
+                self.active_provider = "Cerebras Llama 3.1 70B"
+                return thought, self.active_provider
+
+        # 5. SambaNova Cloud (se chave configurada)
+        if self.sambanova_key:
+            thought = self._try_sambanova(pair_data, macro_status, open_positions)
+            if thought:
+                self.active_provider = "SambaNova Llama 3.3 70B"
+                return thought, self.active_provider
+
+        # 6. Fallback Definitivo: Motor Quantitativo Local Heurístico (Infalível)
+        self.active_provider = "Motor Quantitativo Local (Heurístico 24/7)"
         return self._generate_quantitative_thought(pair_data, macro_status, open_positions, total_equity), self.active_provider
+
+    def _build_prompt(self, pair_data, macro_status, open_positions):
+        coins_summary = ", ".join([f"{p['symbol']} (RSI:{p.get('rsi_1h', 50)})" for p in pair_data[:4]])
+        pos_summary = ", ".join([f"{p['symbol']}" for p in open_positions]) if open_positions else "Nenhuma (Caixa Livre)"
+        return (
+            f"Você é o cérebro quantitativo do BITLUCRO Spot na Binance. "
+            f"Mercado Macro: {macro_status}. Posições em custódia: {pos_summary}. "
+            f"Top Pares: {coins_summary}. "
+            f"Em 2 frases objetivas, dê sua leitura técnica profissional do momento em Português do Brasil."
+        )
 
     def _try_gemini(self, pair_data, macro_status, open_positions):
         try:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={self.gemini_key}"
-            prompt = f"Você é o robô BITLUCRO Spot na Binance. Mercado: {macro_status}. Posições abertas: {len(open_positions)}. Moedas: {pair_data[:3]}. Em 2 frases curtas, dê seu pensamento técnico profissional do momento em PT-BR."
+            prompt = self._build_prompt(pair_data, macro_status, open_positions)
             payload = {"contents": [{"parts": [{"text": prompt}]}]}
             res = requests.post(url, json=payload, timeout=4)
             if res.status_code == 200:
@@ -55,11 +141,71 @@ class AIMarketStudyContingency:
         try:
             url = "https://api.groq.com/openai/v1/chat/completions"
             headers = {"Authorization": f"Bearer {self.groq_key}", "Content-Type": "application/json"}
-            prompt = f"Você é o robô BITLUCRO Spot na Binance. Mercado: {macro_status}. Posições: {len(open_positions)}. Em 2 frases curtas, descreva sua análise técnica atual em PT-BR."
+            prompt = self._build_prompt(pair_data, macro_status, open_positions)
             payload = {
                 "model": "llama-3.3-70b-versatile",
                 "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": 100
+                "max_tokens": 120,
+                "temperature": 0.4
+            }
+            res = requests.post(url, json=payload, headers=headers, timeout=4)
+            if res.status_code == 200:
+                data = res.json()
+                return data["choices"][0]["message"]["content"].strip()
+        except Exception:
+            pass
+        return None
+
+    def _try_openrouter(self, pair_data, macro_status, open_positions):
+        try:
+            url = "https://openrouter.ai/api/v1/chat/completions"
+            headers = {
+                "Authorization": f"Bearer {self.openrouter_key}",
+                "Content-Type": "application/json",
+                "HTTP-Referer": "https://bitlucro.pro",
+                "X-Title": "BITLUCRO Spot Bot"
+            }
+            prompt = self._build_prompt(pair_data, macro_status, open_positions)
+            payload = {
+                "model": "meta-llama/llama-3.3-70b-instruct:free",
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 120
+            }
+            res = requests.post(url, json=payload, headers=headers, timeout=5)
+            if res.status_code == 200:
+                data = res.json()
+                return data["choices"][0]["message"]["content"].strip()
+        except Exception:
+            pass
+        return None
+
+    def _try_cerebras(self, pair_data, macro_status, open_positions):
+        try:
+            url = "https://api.cerebras.ai/v1/chat/completions"
+            headers = {"Authorization": f"Bearer {self.cerebras_key}", "Content-Type": "application/json"}
+            prompt = self._build_prompt(pair_data, macro_status, open_positions)
+            payload = {
+                "model": "llama3.1-70b",
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 120
+            }
+            res = requests.post(url, json=payload, headers=headers, timeout=4)
+            if res.status_code == 200:
+                data = res.json()
+                return data["choices"][0]["message"]["content"].strip()
+        except Exception:
+            pass
+        return None
+
+    def _try_sambanova(self, pair_data, macro_status, open_positions):
+        try:
+            url = "https://api.sambanova.ai/v1/chat/completions"
+            headers = {"Authorization": f"Bearer {self.sambanova_key}", "Content-Type": "application/json"}
+            prompt = self._build_prompt(pair_data, macro_status, open_positions)
+            payload = {
+                "model": "Meta-Llama-3.3-70B-Instruct",
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 120
             }
             res = requests.post(url, json=payload, headers=headers, timeout=4)
             if res.status_code == 200:
@@ -73,19 +219,16 @@ class AIMarketStudyContingency:
         """Motor quantitativo inteligente embutido: sem limites de API, opera 24/7 de forma infalível."""
         now_str = datetime.now().strftime("%H:%M")
         
-        # Análise macro
         is_bull = "BULL" in macro_status
         macro_text = "tendência macro de alta consolidada (BTC acima da SMA 200)" if is_bull else "correção macro global defensiva"
 
-        # Análise de posições
         pos_text = ""
         if open_positions:
             top_pos = open_positions[0]
             pos_text = f"Custódia ativa em {top_pos['symbol']} (PnL: {top_pos.get('current_pnl_pct', 0.0):+.2f}%) aguardando alvo programado de +2.0%."
         else:
-            pos_text = "Caixa 100% livre rastreando entradas rápidas em 15m e 1h."
+            pos_text = "Caixa livre rastreando entradas com confluência em 15M e 1H."
 
-        # Identifica a moeda com melhor oportunidade
         top_opportunity = None
         for p in pair_data:
             rsi = p.get("rsi_15m") or p.get("rsi") or 50

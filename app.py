@@ -167,6 +167,12 @@ HTML_DASHBOARD = """
           <span>Histórico 500H</span>
         </button>
 
+        <!-- Botão Modelos IA (Contingência) -->
+        <button onclick="toggleAiModal(true)" class="text-xs bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold px-2.5 py-1.5 rounded-lg flex items-center space-x-1.5 transition" title="Modelos de IA & Contingência 24/7">
+          <i class="fa-solid fa-server text-emerald-400"></i>
+          <span>Modelos IA</span>
+        </button>
+
         <!-- Botão Guia / FAQ (Heurística #10) -->
         <button onclick="toggleHelpModal(true)" class="hidden sm:flex text-xs bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/80 font-semibold px-2.5 py-1.5 rounded-lg items-center space-x-1 transition" title="Guia e Princípios de Operação">
           <i class="fa-solid fa-circle-question text-amber-400"></i>
@@ -310,18 +316,37 @@ HTML_DASHBOARD = """
         </div>
 
         <div class="flex items-center space-x-2 flex-wrap gap-y-1">
-          <span class="text-[10px] bg-purple-500/10 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded font-mono" id="activeAiBadge">
-            <i class="fa-solid fa-microchip text-purple-400"></i> Motor Quantitativo Local
-          </span>
-          <span class="text-[10px] bg-blue-500/10 text-blue-300 border border-blue-500/20 px-2 py-0.5 rounded font-mono">
-            <i class="fa-solid fa-clock-rotate-left text-blue-400"></i> Multi-TF: 15M | 1H | 4H
-          </span>
+          <!-- MODELO EM USO EM DESTAQUE MÁXIMO -->
+          <div class="flex items-center space-x-1.5 bg-purple-950/80 border-2 border-purple-500/60 px-3 py-1.5 rounded-xl shadow-lg">
+            <span class="text-[10px] uppercase font-black text-amber-400 tracking-wider flex items-center gap-1.5">
+              <i class="fa-solid fa-microchip text-purple-400 animate-pulse text-xs"></i> MODELO EM AÇÃO:
+            </span>
+            <span class="text-xs font-black text-white font-mono" id="activeAiBadge">
+              Motor Quantitativo Local (Heurístico 24/7)
+            </span>
+          </div>
+          <button onclick="toggleAiModal(true)" class="text-[11px] bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 px-2.5 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 shadow" title="Ver status da contingência dos modelos de IA">
+            <i class="fa-solid fa-layer-group text-purple-400"></i> Modelos de IA
+          </button>
         </div>
       </div>
 
-      <div class="bg-darkbg/90 border border-slate-800 rounded-lg p-3 text-xs text-slate-200 leading-relaxed font-sans shadow-inner">
-        <i class="fa-solid fa-quote-left text-purple-400 mr-1.5 opacity-60"></i>
-        <span id="currentThoughtText" class="italic">Analisando cotações em tempo real da Binance...</span>
+      <div class="bg-darkbg/90 border border-slate-800 rounded-lg p-3.5 text-xs text-slate-200 leading-relaxed font-sans shadow-inner space-y-2.5">
+        <div>
+          <i class="fa-solid fa-quote-left text-purple-400 mr-1.5 opacity-60"></i>
+          <span id="currentThoughtText" class="italic">Analisando cotações em tempo real da Binance...</span>
+        </div>
+        <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400 flex-wrap gap-2">
+          <div class="flex items-center gap-1.5">
+            <span class="text-slate-500">Cérebro da Análise:</span>
+            <span class="font-mono font-bold text-amber-400" id="thoughtSourceModel">Motor Quantitativo Local (Heurístico 24/7)</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-emerald-400 font-semibold flex items-center gap-1"><i class="fa-solid fa-shield-check"></i> Contingência Ativa</span>
+            <span class="text-slate-600">|</span>
+            <button onclick="toggleAiModal(true)" class="text-purple-400 hover:text-purple-300 font-bold underline">Configurar Outras APIs Grátis</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -631,6 +656,105 @@ HTML_DASHBOARD = """
   </div>
 
   <!-- ==========================================
+       MODAL CONTINGÊNCIA AMPLA DE MODELOS DE IA
+       ========================================== -->
+  <div id="aiModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-cardbg border border-purple-500/40 rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto custom-scroll">
+      <div class="flex items-center justify-between border-b border-bordercol pb-3">
+        <div class="flex items-center space-x-2.5 text-purple-400">
+          <i class="fa-solid fa-server text-xl"></i>
+          <div>
+            <h3 class="text-base font-bold text-white">Cascata de Contingência de Modelos de IA (24/7)</h3>
+            <p class="text-[11px] text-slate-400">Múltiplos provedores gratuitos com fallback infalível para zero downtime</p>
+          </div>
+        </div>
+        <button onclick="toggleAiModal(false)" class="text-slate-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="bg-purple-950/40 border border-purple-500/30 rounded-xl p-3 text-xs text-purple-200">
+        🤖 <b>Como Funciona a Contingência:</b> O robô tenta os modelos na ordem abaixo a cada ciclo. Se a primeira API falhar, demorar mais de 4s ou atingir rate limit, ele salta instantaneamente para a próxima sem travar suas operações.
+      </div>
+
+      <div class="space-y-2.5" id="aiProvidersList">
+        <div class="bg-darkbg p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+          <div class="space-y-0.5">
+            <div class="font-bold text-white text-xs flex items-center gap-1.5">
+              <span>1. Google Gemini 2.5 Flash</span>
+              <span class="text-[10px] bg-blue-500/10 text-blue-400 px-1.5 py-0.2 rounded">Google AI Studio</span>
+            </div>
+            <div class="text-[11px] text-slate-400">Variável no Render: <code class="text-amber-400">GEMINI_API_KEY</code> | Grátis (15 RPM)</div>
+          </div>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400" id="statusGemini">Standby</span>
+        </div>
+
+        <div class="bg-darkbg p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+          <div class="space-y-0.5">
+            <div class="font-bold text-white text-xs flex items-center gap-1.5">
+              <span>2. Groq Cloud (Llama 3.3 70B)</span>
+              <span class="text-[10px] bg-orange-500/10 text-orange-400 px-1.5 py-0.2 rounded">console.groq.com</span>
+            </div>
+            <div class="text-[11px] text-slate-400">Variável no Render: <code class="text-amber-400">GROQ_API_KEY</code> | Grátis (30 RPM, 250ms)</div>
+          </div>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400" id="statusGroq">Standby</span>
+        </div>
+
+        <div class="bg-darkbg p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+          <div class="space-y-0.5">
+            <div class="font-bold text-white text-xs flex items-center gap-1.5">
+              <span>3. OpenRouter (Llama 3.3 / DeepSeek :free)</span>
+              <span class="text-[10px] bg-emerald-500/10 text-emerald-400 px-1.5 py-0.2 rounded">openrouter.ai</span>
+            </div>
+            <div class="text-[11px] text-slate-400">Variável no Render: <code class="text-amber-400">OPENROUTER_API_KEY</code> | Modelos Free</div>
+          </div>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400" id="statusOpenrouter">Standby</span>
+        </div>
+
+        <div class="bg-darkbg p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+          <div class="space-y-0.5">
+            <div class="font-bold text-white text-xs flex items-center gap-1.5">
+              <span>4. Cerebras Cloud (Llama 3.1 70B)</span>
+              <span class="text-[10px] bg-cyan-500/10 text-cyan-400 px-1.5 py-0.2 rounded">cloud.cerebras.ai</span>
+            </div>
+            <div class="text-[11px] text-slate-400">Variável no Render: <code class="text-amber-400">CEREBRAS_API_KEY</code> | 1M tokens/dia Grátis</div>
+          </div>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400" id="statusCerebras">Standby</span>
+        </div>
+
+        <div class="bg-darkbg p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+          <div class="space-y-0.5">
+            <div class="font-bold text-white text-xs flex items-center gap-1.5">
+              <span>5. SambaNova Cloud (Llama 3.3 70B)</span>
+              <span class="text-[10px] bg-rose-500/10 text-rose-400 px-1.5 py-0.2 rounded">cloud.sambanova.ai</span>
+            </div>
+            <div class="text-[11px] text-slate-400">Variável no Render: <code class="text-amber-400">SAMBANOVA_API_KEY</code> | Grátis Ultra-Rápido</div>
+          </div>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400" id="statusSambanova">Standby</span>
+        </div>
+
+        <div class="bg-darkbg p-3 rounded-xl border border-emerald-500/40 flex items-center justify-between">
+          <div class="space-y-0.5">
+            <div class="font-bold text-white text-xs flex items-center gap-1.5">
+              <span>6. Motor Quantitativo Local (Heurístico)</span>
+              <span class="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.2 rounded font-bold">EMBUTIDO 24/7</span>
+            </div>
+            <div class="text-[11px] text-slate-400">Algoritmo matemático em Python | Zero Downtime, sem internet externa</div>
+          </div>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">ATIVO PERMANENTE</span>
+        </div>
+      </div>
+
+      <div class="pt-2 flex items-center justify-between border-t border-bordercol text-[11px] text-slate-400">
+        <span>Como ativar: configure a chave no Render em <b class="text-slate-200">Environment Variables</b></span>
+        <button onclick="toggleAiModal(false)" class="text-xs bg-purple-600 hover:bg-purple-500 text-white font-bold px-4 py-2 rounded-lg transition shadow">
+          Entendido
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
        SCRIPTS FRONTEND (ATUALIZAÇÃO REATIVA & REGRAS NIELSEN)
        ========================================== -->
   <script>
@@ -640,6 +764,41 @@ HTML_DASHBOARD = """
       const el = document.getElementById('countdownTimer');
       if (el) el.innerText = `${countdown}s`;
     }, 1000);
+
+    async function toggleAiModal(show) {
+      document.getElementById('aiModal').classList.toggle('hidden', !show);
+      if (show) {
+        try {
+          const res = await fetch('/api/ai_status');
+          const data = await res.json();
+          if (data && data.providers) {
+            data.providers.forEach(p => {
+              let elId = '';
+              if (p.name.includes('Gemini')) elId = 'statusGemini';
+              else if (p.name.includes('Groq')) elId = 'statusGroq';
+              else if (p.name.includes('OpenRouter')) elId = 'statusOpenrouter';
+              else if (p.name.includes('Cerebras')) elId = 'statusCerebras';
+              else if (p.name.includes('SambaNova')) elId = 'statusSambanova';
+              
+              if (elId) {
+                const el = document.getElementById(elId);
+                if (el) {
+                  if (p.configured) {
+                    el.innerText = 'CONECTADO 🟢';
+                    el.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/40';
+                  } else {
+                    el.innerText = 'Chave Ausente (Standby)';
+                    el.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400';
+                  }
+                }
+              }
+            });
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
 
     function toggleResetModal(show) {
       document.getElementById('resetModal').classList.toggle('hidden', !show);
@@ -743,7 +902,11 @@ HTML_DASHBOARD = """
         if (tEl && data.current_thought) tEl.innerText = data.current_thought;
         const aiBadge = document.getElementById('activeAiBadge');
         if (aiBadge && data.active_ai_provider) {
-          aiBadge.innerHTML = `<i class="fa-solid fa-microchip text-purple-400"></i> ${data.active_ai_provider}`;
+          aiBadge.innerText = data.active_ai_provider;
+        }
+        const srcModel = document.getElementById('thoughtSourceModel');
+        if (srcModel && data.active_ai_provider) {
+          srcModel.innerText = data.active_ai_provider;
         }
 
         // 3. Tabela de Posições Abertas (Custódia Spot)
@@ -957,6 +1120,13 @@ def get_skill():
 @app.route('/api/historical')
 def get_historical():
     return jsonify(engine.historical_analyzer.data)
+
+@app.route('/api/ai_status')
+def get_ai_status():
+    return jsonify({
+        "active_provider": engine.ai_contingency.active_provider,
+        "providers": engine.ai_contingency.get_providers_status()
+    })
 
 @app.route('/api/scan', methods=['POST'])
 def manual_scan():
