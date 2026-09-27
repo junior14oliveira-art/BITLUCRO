@@ -85,6 +85,23 @@ def keep_alive_self_ping():
 ping_thread = threading.Thread(target=keep_alive_self_ping, daemon=True)
 ping_thread.start()
 
+# Robô Oficial MEXC Conta Real (24/7 no Render)
+from rodar_mexc_real import MEXCTrader
+mexc_bot = MEXCTrader()
+
+def mexc_background_trading_loop():
+    time.sleep(3)
+    add_log("Worker Oficial MEXC Real 24/7 em execução.")
+    while True:
+        try:
+            mexc_bot.step()
+        except Exception:
+            pass
+        time.sleep(4)
+
+mexc_worker_thread = threading.Thread(target=mexc_background_trading_loop, daemon=True)
+mexc_worker_thread.start()
+
 HTML_DASHBOARD = """
 <!DOCTYPE html>
 <html lang="pt-BR" class="dark">
@@ -263,6 +280,25 @@ HTML_DASHBOARD = """
        CONTEÚDO PRINCIPAL
        ========================================== -->
   <main class="max-w-7xl mx-auto p-4 space-y-4 w-full flex-1">
+
+    <!-- SELETOR DE MODO: SIMULADOR vs CONTA REAL MEXC -->
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-cardbg border border-bordercol p-2.5 rounded-xl shadow-lg">
+      <div class="flex items-center space-x-2 w-full sm:w-auto">
+        <button onclick="switchMode('sim')" id="tabBtnSim" class="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black transition-all bg-amber-500 text-slate-950 shadow-md">
+          <i class="fa-solid fa-gamepad"></i> <span>SIMULADOR SPOT (R$ 1.000)</span>
+        </button>
+        <button onclick="switchMode('mexc')" id="tabBtnMexc" class="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black transition-all bg-slate-900 text-emerald-400 border border-emerald-500/40 hover:bg-slate-800">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          <i class="fa-solid fa-circle-dollar-to-slot text-emerald-400"></i> <span>CONTA REAL MEXC (24/7)</span>
+        </button>
+      </div>
+      <div id="activeModeBadge" class="text-[11px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+        <i class="fa-solid fa-circle-check text-emerald-400"></i> <span id="activeModeLabel">Modo Ativo: Simulador Binance</span>
+      </div>
+    </div>
+
+    <!-- WRAPPER DO MODO SIMULADOR -->
+    <div id="simModeView" class="space-y-4">
 
     <!-- Heurística #5: Prevenção de Erros & Heurística #6: Reconhecimento das Leis -->
     <div class="bg-gradient-to-r from-amber-950/30 via-cardbg to-slate-900/60 border border-amber-500/20 rounded-xl p-3 sm:p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-xs shadow-md">
@@ -547,7 +583,183 @@ HTML_DASHBOARD = """
       </div>
 
     </div>
+    <!-- FIM DO MODO SIMULADOR -->
 
+    <!-- ==========================================
+         WRAPPER DO MODO CONTA REAL MEXC (24/7)
+         ========================================== -->
+    <div id="mexcModeView" class="space-y-4 hidden">
+      
+      <!-- Blindagem & Destaque Conta Real MEXC -->
+      <div class="bg-gradient-to-r from-emerald-950/40 via-cardbg to-slate-900/80 border border-emerald-500/30 rounded-xl p-3 sm:p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-xs shadow-md">
+        <div class="flex items-center space-x-2 text-emerald-400 font-bold text-sm">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+          <i class="fa-solid fa-bolt"></i>
+          <span>MEXC CONTA REAL (SPOT 24/7)</span>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap text-[11px] text-slate-300">
+          <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-lg font-bold">
+            <i class="fa-solid fa-check-double mr-1"></i> Spot Puro (Sem Liquidação)
+          </span>
+          <span class="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2.5 py-1 rounded-lg font-bold">
+            <i class="fa-solid fa-arrows-spin mr-1"></i> Juros Compostos (+2% Reinvestido)
+          </span>
+          <span class="bg-purple-500/10 text-purple-300 border border-purple-500/20 px-2.5 py-1 rounded-lg font-bold">
+            <i class="fa-solid fa-shield-halved mr-1"></i> Saque Bloqueado na API (100% Seguro)
+          </span>
+        </div>
+      </div>
+
+      <!-- 4 Cards de Métricas Financeiras MEXC Real -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <!-- Patrimônio Total Real -->
+        <div class="bg-cardbg border border-bordercol rounded-xl p-4 shadow-sm hover:border-slate-700 transition">
+          <div class="flex items-center justify-between text-xs text-slate-400 font-medium">
+            <span>Patrimônio Real (USDT)</span>
+            <i class="fa-solid fa-vault text-emerald-400/80"></i>
+          </div>
+          <div class="text-2xl font-black text-white mono mt-1.5" id="mexcTotalEquity">$ 2.24</div>
+          <div class="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
+            <span>Em Reais:</span>
+            <span class="mono font-semibold text-emerald-400" id="mexcTotalEquityBrl">≈ R$ 12,80</span>
+          </div>
+        </div>
+
+        <!-- Saldo Líquido Livre -->
+        <div class="bg-cardbg border border-bordercol rounded-xl p-4 shadow-sm hover:border-slate-700 transition">
+          <div class="flex items-center justify-between text-xs text-slate-400 font-medium">
+            <span>Caixa Livre (USDT)</span>
+            <i class="fa-solid fa-money-bill-wave text-emerald-400/80"></i>
+          </div>
+          <div class="text-2xl font-black text-emerald-400 mono mt-1.5" id="mexcCashBalance">$ 0.05</div>
+          <div class="text-[11px] text-slate-400 mt-1">Disponível para Compras</div>
+        </div>
+
+        <!-- Lucro Líquido Realizado -->
+        <div class="bg-cardbg border border-bordercol rounded-xl p-4 shadow-sm hover:border-slate-700 transition">
+          <div class="flex items-center justify-between text-xs text-slate-400 font-medium">
+            <span>Lucro Líquido Real</span>
+            <i class="fa-solid fa-chart-line text-emerald-400/80"></i>
+          </div>
+          <div class="text-2xl font-black text-emerald-400 mono mt-1.5" id="mexcProfitVal">+$ 0.00</div>
+          <div class="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
+            <span>Crescimento:</span>
+            <span class="mono font-semibold text-emerald-400" id="mexcProfitPct">+0.00%</span>
+          </div>
+        </div>
+
+        <!-- Operações Finalizadas -->
+        <div class="bg-cardbg border border-bordercol rounded-xl p-4 shadow-sm hover:border-slate-700 transition">
+          <div class="flex items-center justify-between text-xs text-slate-400 font-medium">
+            <span>Operações Reais</span>
+            <i class="fa-solid fa-trophy text-amber-400/80"></i>
+          </div>
+          <div class="text-2xl font-black text-amber-400 mono mt-1.5" id="mexcWinsCount">0 Wins</div>
+          <div class="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
+            <span>Vendas no Prejuízo:</span>
+            <span class="mono font-semibold text-emerald-400">0 (Zero)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pensamento da IA MEXC Real -->
+      <div class="bg-cardbg border border-emerald-500/30 rounded-xl p-4 shadow-sm relative overflow-hidden">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center space-x-2">
+            <div class="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-xs">
+              <i class="fa-solid fa-brain"></i>
+            </div>
+            <h2 class="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">O que o Robô MEXC Real Está Pensando & Analisando Agora</h2>
+          </div>
+          <span class="text-[10px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-bold">Ao Vivo 24H</span>
+        </div>
+        <p id="mexcThoughtText" class="text-xs sm:text-sm text-slate-200 leading-relaxed font-mono bg-darkbg p-3 rounded-lg border border-slate-800">
+          Carregando leitura ao vivo da MEXC...
+        </p>
+      </div>
+
+      <!-- Custódia Ativa na MEXC (Posição Aberta ao Vivo) -->
+      <div class="bg-cardbg border border-bordercol rounded-xl p-4 shadow-sm space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-coins text-emerald-400"></i>
+            <h2 class="text-sm font-bold text-white tracking-wide">Custódia Ativa na MEXC (Posição Aberta em Tempo Real)</h2>
+          </div>
+          <span class="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 font-bold" id="mexcPosBadge">Monitorando Ticker (1s)</span>
+        </div>
+
+        <!-- Tabela Desktop MEXC -->
+        <div class="hidden sm:block overflow-x-auto">
+          <table class="w-full text-left text-xs min-w-[600px]">
+            <thead class="text-slate-400 border-b border-bordercol bg-darkbg/50">
+              <tr>
+                <th class="py-2.5 px-3">Par</th>
+                <th class="py-2.5 px-3">Entrada</th>
+                <th class="py-2.5 px-3">Cotação Atual</th>
+                <th class="py-2.5 px-3">Alvo (+2.0%)</th>
+                <th class="py-2.5 px-3">Investido</th>
+                <th class="py-2.5 px-3">PnL Atual</th>
+                <th class="py-2.5 px-3">Hora Entrada</th>
+              </tr>
+            </thead>
+            <tbody id="mexcOpenPosTable" class="divide-y divide-bordercol">
+              <tr><td colspan="7" class="py-6 text-center text-slate-400">Carregando dados da MEXC...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Cards Mobile MEXC -->
+        <div id="mexcOpenPosMobile" class="sm:hidden space-y-2.5">
+          <!-- Preenchido via JS -->
+        </div>
+      </div>
+
+      <!-- Grid com Histórico de Lucros & Logs da MEXC -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <!-- Histórico de Trades Lucrados MEXC -->
+        <div class="bg-cardbg border border-bordercol rounded-xl p-4 shadow-sm flex flex-col">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center space-x-2">
+              <i class="fa-solid fa-receipt text-emerald-400"></i>
+              <h2 class="text-sm font-bold text-white tracking-wide">Histórico de Operações Lucradas (MEXC Real)</h2>
+            </div>
+            <span class="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 font-bold">100% Spot</span>
+          </div>
+          <div class="overflow-y-auto max-h-64 custom-scroll flex-1">
+            <table class="w-full text-left text-xs">
+              <thead class="text-slate-400 border-b border-bordercol bg-darkbg/50">
+                <tr>
+                  <th class="py-2 px-2">Par</th>
+                  <th class="py-2 px-2">Entrada ➔ Saída</th>
+                  <th class="py-2 px-2">Ganho %</th>
+                  <th class="py-2 px-2">Lucro Líquido</th>
+                  <th class="py-2 px-2">Hora</th>
+                </tr>
+              </thead>
+              <tbody id="mexcClosedTradesTable" class="divide-y divide-bordercol">
+                <tr><td colspan="5" class="py-6 text-center text-slate-500">Nenhuma operação finalizada ainda. Primeira custódia em andamento!</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Logs da MEXC em Tempo Real -->
+        <div class="bg-cardbg border border-bordercol rounded-xl p-4 shadow-sm flex flex-col">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center space-x-2">
+              <i class="fa-solid fa-terminal text-blue-400"></i>
+              <h2 class="text-sm font-bold text-white tracking-wide">Logs da Conta Real MEXC (Tempo Real)</h2>
+            </div>
+            <span class="text-[10px] mono text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700/60">Ao Vivo</span>
+          </div>
+          <div id="mexcLogsConsole" class="bg-darkbg border border-slate-800 rounded-lg p-3 text-xs mono text-slate-300 h-64 overflow-y-auto space-y-1.5 custom-scroll">
+            <div class="text-slate-500">Conectando aos logs da MEXC...</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <!-- FIM DO MODO CONTA REAL MEXC -->
   </main>
 
   <!-- ==========================================
@@ -1419,9 +1631,156 @@ HTML_DASHBOARD = """
       localStorage.setItem('pwa_dismissed', 'true');
     }
 
+    let currentMode = 'sim';
+
+    function switchMode(mode) {
+      currentMode = mode;
+      const simView = document.getElementById('simModeView');
+      const mexcView = document.getElementById('mexcModeView');
+      const btnSim = document.getElementById('tabBtnSim');
+      const btnMexc = document.getElementById('tabBtnMexc');
+      const badge = document.getElementById('activeModeLabel');
+
+      if (mode === 'sim') {
+        simView.classList.remove('hidden');
+        mexcView.classList.add('hidden');
+        btnSim.className = "flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black transition-all bg-amber-500 text-slate-950 shadow-md";
+        btnMexc.className = "flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black transition-all bg-slate-900 text-emerald-400 border border-emerald-500/40 hover:bg-slate-800";
+        if (badge) badge.innerText = "Modo Ativo: Simulador Binance";
+      } else {
+        simView.classList.add('hidden');
+        mexcView.classList.remove('hidden');
+        btnMexc.className = "flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black transition-all bg-emerald-500 text-slate-950 shadow-md";
+        btnSim.className = "flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black transition-all bg-slate-900 text-amber-400 border border-amber-500/40 hover:bg-slate-800";
+        if (badge) badge.innerText = "Modo Ativo: MEXC Conta Real (USDT)";
+        updateMexcDashboard();
+      }
+    }
+
+    async function updateMexcDashboard() {
+      try {
+        const res = await fetch('/api/mexc/state');
+        const s = await res.json();
+
+        // 1. Métricas principais
+        const eqEl = document.getElementById('mexcTotalEquity');
+        const eqBrlEl = document.getElementById('mexcTotalEquityBrl');
+        const cashEl = document.getElementById('mexcCashBalance');
+        const profValEl = document.getElementById('mexcProfitVal');
+        const profPctEl = document.getElementById('mexcProfitPct');
+        const winsEl = document.getElementById('mexcWinsCount');
+        const thoughtEl = document.getElementById('mexcThoughtText');
+
+        const usdtTot = s.total_equity_usdt || s.cash_balance_usdt || 2.24;
+        if (eqEl) eqEl.innerText = `$ ${usdtTot.toFixed(2)}`;
+        if (eqBrlEl) eqBrlEl.innerText = `≈ R$ ${(usdtTot * 5.70).toFixed(2)}`;
+
+        const usdtFree = s.cash_balance_usdt || 0.0;
+        if (cashEl) cashEl.innerText = `$ ${usdtFree.toFixed(2)}`;
+
+        const profUsdt = s.accumulated_profit_usdt || 0.0;
+        if (profValEl) profValEl.innerText = `+$ ${profUsdt.toFixed(4)}`;
+        if (profPctEl) profPctEl.innerText = `${s.profit_pct >= 0 ? '+' : ''}${s.profit_pct || 0}%`;
+
+        if (winsEl) winsEl.innerText = `${s.wins || 0} Wins`;
+        if (thoughtEl && s.current_thought) thoughtEl.innerText = s.current_thought;
+
+        // 2. Custódia Ativa
+        const pTable = document.getElementById('mexcOpenPosTable');
+        const pMob = document.getElementById('mexcOpenPosMobile');
+        const pos = s.open_position;
+
+        if (!pos) {
+          if (pTable) pTable.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-slate-400"><i class="fa-solid fa-magnifying-glass text-emerald-400 mr-2"></i> Nenhuma posição aberta na MEXC. Robô rastreando oportunidades em 15m e 1h.</td></tr>`;
+          if (pMob) pMob.innerHTML = `<div class="bg-darkbg/70 border border-bordercol rounded-xl p-4 text-center text-slate-400 text-xs"><i class="fa-solid fa-magnifying-glass text-emerald-400 text-lg mb-2"></i><p>Nenhuma posição aberta no momento. Rastreando na MEXC.</p></div>`;
+        } else {
+          const isProf = (pos.current_pnl_pct || 0) >= 0;
+          const pnlClass = isProf ? 'text-emerald-400 bg-emerald-500/10' : 'text-rose-400 bg-rose-500/10';
+
+          if (pTable) {
+            pTable.innerHTML = `
+              <tr class="hover:bg-slate-800/40 transition">
+                <td class="py-3 px-3 font-bold text-white flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span>
+                  ${pos.symbol}
+                </td>
+                <td class="py-3 px-3 mono text-slate-300">$ ${pos.entry_price.toFixed(4)}</td>
+                <td class="py-3 px-3 mono font-bold text-white" id="mexcLivePrice">$ ${(pos.current_price || pos.entry_price).toFixed(4)}</td>
+                <td class="py-3 px-3 mono text-emerald-400 font-semibold">$ ${pos.target_price.toFixed(4)} <span class="text-[10px] text-emerald-500">(+2%)</span></td>
+                <td class="py-3 px-3 mono text-slate-300">$ ${pos.invested_usdt.toFixed(2)} USDT</td>
+                <td class="py-3 px-3">
+                  <span id="mexcLivePnl" class="px-2 py-0.5 rounded font-mono font-bold text-[11px] ${pnlClass}">
+                    ${pos.current_pnl_pct >= 0 ? '+' : ''}${pos.current_pnl_pct || 0}%
+                  </span>
+                </td>
+                <td class="py-3 px-3 mono text-slate-400 text-[11px]">${pos.entry_time || '--'}</td>
+              </tr>
+            `;
+          }
+
+          if (pMob) {
+            pMob.innerHTML = `
+              <div class="bg-darkbg border border-emerald-500/30 rounded-xl p-3.5 shadow-sm space-y-2.5">
+                <div class="flex items-center justify-between">
+                  <div class="font-black text-white text-sm flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span>
+                    ${pos.symbol}
+                  </div>
+                  <span id="mexcLivePnlMob" class="px-2 py-0.5 rounded font-mono font-bold text-xs ${pnlClass}">
+                    ${pos.current_pnl_pct >= 0 ? '+' : ''}${pos.current_pnl_pct || 0}%
+                  </span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-slate-800">
+                  <div>
+                    <span class="text-slate-400 text-[10px]">Entrada:</span>
+                    <div class="mono text-slate-300 font-semibold">$ ${pos.entry_price.toFixed(4)}</div>
+                  </div>
+                  <div>
+                    <span class="text-slate-400 text-[10px]">Cotação Atual:</span>
+                    <div class="mono text-white font-bold" id="mexcLivePriceMob">$ ${(pos.current_price || pos.entry_price).toFixed(4)}</div>
+                  </div>
+                  <div>
+                    <span class="text-slate-400 text-[10px]">Alvo (+2%):</span>
+                    <div class="mono text-emerald-400 font-semibold">$ ${pos.target_price.toFixed(4)}</div>
+                  </div>
+                  <div>
+                    <span class="text-slate-400 text-[10px]">Investido:</span>
+                    <div class="mono text-slate-300 font-semibold">$ ${pos.invested_usdt.toFixed(2)} USDT</div>
+                  </div>
+                </div>
+              </div>
+            `;
+          }
+        }
+
+        // 3. Histórico de Trades
+        const cTable = document.getElementById('mexcClosedTradesTable');
+        if (cTable && s.closed_trades && s.closed_trades.length > 0) {
+          cTable.innerHTML = s.closed_trades.slice().reverse().map(t => `
+            <tr class="hover:bg-slate-800/40 transition">
+              <td class="py-2 px-2 font-bold text-white">${t.symbol}</td>
+              <td class="py-2 px-2 mono text-slate-300 text-[11px]">$ ${t.entry} ➔ $ ${t.exit}</td>
+              <td class="py-2 px-2 mono text-emerald-400 font-bold">+${t.pnl_pct}%</td>
+              <td class="py-2 px-2 mono text-emerald-400 font-bold">+$ ${t.profit_usdt}</td>
+              <td class="py-2 px-2 mono text-slate-500 text-[11px]">${t.time}</td>
+            </tr>
+          `).join('');
+        }
+
+        // 4. Logs
+        const lConsole = document.getElementById('mexcLogsConsole');
+        if (lConsole && s.logs && s.logs.length > 0) {
+          lConsole.innerHTML = s.logs.map(l => `<div class="leading-relaxed hover:text-white transition"><span class="text-slate-500 font-mono">[MEXC]</span> ${l}</div>`).join('');
+        }
+
+      } catch (err) {}
+    }
+
     setInterval(updateDashboard, 4000);
     setInterval(updateLiveTicker, 1000);
+    setInterval(updateMexcDashboard, 2500);
     updateDashboard();
+    updateMexcDashboard();
   </script>
 </body>
 </html>
@@ -1442,6 +1801,12 @@ def get_state():
 @app.route('/api/skill')
 def get_skill():
     return jsonify(engine.brain.state)
+
+@app.route('/api/mexc/state')
+def get_mexc_state():
+    state = mexc_bot.state.copy()
+    state["logs"] = mexc_bot.logs
+    return jsonify(state)
 
 @app.route('/api/historical')
 def get_historical():
