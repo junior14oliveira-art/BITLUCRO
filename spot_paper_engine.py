@@ -225,26 +225,69 @@ class BinanceSpotPaperEngine:
         except Exception:
             return None
 
+    def get_live_prices(self, symbols):
+        """Busca cotações em tempo real com fallback para múltiplos espelhos públicos da Binance."""
+        if not symbols:
+            return {}
+        hosts = [
+            "https://api.binance.com",
+            "https://api1.binance.com",
+            "https://api2.binance.com",
+            "https://api3.binance.com"
+        ]
+        prices = {}
+        # Tenta requisição em lote (1 única chamada para todos os símbolos)
+        try:
+            symbols_json = json.dumps(symbols)
+            for host in hosts:
+                try:
+                    r = requests.get(f"{host}/api/v3/ticker/price", params={"symbols": symbols_json}, timeout=3)
+                    if r.status_code == 200:
+                        for item in r.json():
+                            prices[item["symbol"]] = float(item["price"])
+                        if len(prices) >= len(symbols):
+                            return prices
+                except Exception:
+                    continue
+        except Exception:
+            pass
+
+        # Se faltou algum símbolo, busca individualmente com timeout curto
+        for sym in symbols:
+            if sym not in prices:
+                for host in hosts:
+                    try:
+                        r = requests.get(f"{host}/api/v3/ticker/price", params={"symbol": sym}, timeout=2)
+                        if r.status_code == 200:
+                            prices[sym] = float(r.json()["price"])
+                            break
+                    except Exception:
+                        continue
+        return prices
+
     def update_open_positions(self):
         """
         Verifica se posições abertas atingiram o Take Profit de +2.0%.
         Desconta as taxas oficiais da Binance (0.10%) e slippage (0.05%) para fidelidade total!
         """
+        open_pos = self.state.get("open_positions", [])
+        if not open_pos:
+            return
+
+        symbols = [p["symbol"] for p in open_pos]
+        price_map = self.get_live_prices(symbols)
+
         active_positions = []
         positions_value_brl = 0.0
 
-        for pos in self.state.get("open_positions", []):
+        for pos in open_pos:
             sym = pos["symbol"]
             entry_price = pos["entry_price"]
             stake_brl = pos["stake_brl"]
             target_price = pos["target_price"]
             buy_fee_brl = pos.get("buy_fee_brl", stake_brl * (TOTAL_ORDER_COST_PCT / 100.0))
 
-            try:
-                res = requests.get(f"{BINANCE_API_URL}/ticker/price?symbol={sym}", timeout=4).json()
-                current_price = float(res['price'])
-            except Exception:
-                current_price = entry_price
+            current_price = price_map.get(sym, pos.get("current_price", entry_price))
 
             change_pct = ((current_price - entry_price) / entry_price) * 100
             current_val_brl = stake_brl * (1 + (change_pct / 100.0))
@@ -260,7 +303,7 @@ class BinanceSpotPaperEngine:
                 net_profit_brl = net_exit_val_brl - stake_brl
 
                 self.state["cash_balance_brl"] += net_exit_val_brl
-                self.state["accumulated_profit_brl"] += net_profit_brl
+                self.state["accumulated_profit_brl"] = round(self.state.get("accumulated_profit_brl", 0.0) + net_profit_brl, 2)
                 self.state["gross_profit_brl"] = round(self.state.get("gross_profit_brl", 0.0) + gross_profit_brl, 4)
                 self.state["total_fees_paid_brl"] = round(self.state.get("total_fees_paid_brl", 0.0) + total_trade_fees, 4)
                 self.state["win_count"] += 1
@@ -283,7 +326,6 @@ class BinanceSpotPaperEngine:
                 self.add_detailed_log("TAKE_PROFIT", f"{sym} bateu alvo (+{change_pct:.2f}%)! Lucro Líquido Real: +R$ {net_profit_brl:.2f} (Taxa Binance: R$ {total_trade_fees:.3f}).")
                 print(f"\n🎉 [TAKE PROFIT SPOT REAL] {sym} vendido! Lucro Líquido: +R$ {net_profit_brl:.2f} | Taxas Pagas: R$ {total_trade_fees:.3f}!")
             else:
-                # Mantém em custódia (Mercado Spot puro: nunca vende no prejuízo)
                 pos["current_price"] = current_price
                 pos["current_pnl_pct"] = round(change_pct, 2)
                 active_positions.append(pos)
@@ -293,6 +335,64 @@ class BinanceSpotPaperEngine:
         total_profit = self.state["total_equity_brl"] - self.state["initial_capital_brl"]
         self.state["profit_pct"] = round((total_profit / self.state["initial_capital_brl"]) * 100, 2)
         self.save_state()
+
+    def execute_take_profit_for_symbol(self, symbol, live_price=None):
+        """Executa imediatamente a venda de uma posição que atingiu o alvo (+2.0%)."""
+        open_pos = self.state.get("open_positions", [])
+        matched = None
+        remaining = []
+        for p in open_pos:
+            if p["symbol"] == symbol and matched is None:
+                matched = p
+            else:
+                remaining.append(p)
+
+        if not matched:
+            return {"status": "ignored", "message": f"Posição {symbol} já encerrada."}
+
+        entry_price = matched["entry_price"]
+        stake_brl = matched["stake_brl"]
+        target_price = matched["target_price"]
+        current_price = float(live_price) if live_price else matched.get("current_price", entry_price)
+
+        if current_price < target_price:
+            return {"status": "ignored", "message": f"Preço {current_price} ainda abaixo do alvo {target_price}."}
+
+        change_pct = ((current_price - entry_price) / entry_price) * 100
+        current_val_brl = stake_brl * (1 + (change_pct / 100.0))
+        buy_fee_brl = matched.get("buy_fee_brl", stake_brl * (TOTAL_ORDER_COST_PCT / 100.0))
+        sell_fee_brl = current_val_brl * (TOTAL_ORDER_COST_PCT / 100.0)
+        total_trade_fees = buy_fee_brl + sell_fee_brl
+        
+        net_exit_val_brl = current_val_brl - sell_fee_brl
+        net_profit_brl = net_exit_val_brl - stake_brl
+
+        self.state["cash_balance_brl"] += net_exit_val_brl
+        self.state["accumulated_profit_brl"] = round(self.state.get("accumulated_profit_brl", 0.0) + net_profit_brl, 2)
+        self.state["gross_profit_brl"] = round(self.state.get("gross_profit_brl", 0.0) + (current_val_brl - stake_brl), 4)
+        self.state["total_fees_paid_brl"] = round(self.state.get("total_fees_paid_brl", 0.0) + total_trade_fees, 4)
+        self.state["win_count"] += 1
+
+        trade_record = {
+            "symbol": symbol,
+            "timeframe": matched.get("timeframe", "1H"),
+            "entry_time": matched["entry_time"],
+            "exit_time": datetime.now().strftime("%d/%m %H:%M:%S"),
+            "entry_price": entry_price,
+            "exit_price": current_price,
+            "gross_profit_brl": round(current_val_brl - stake_brl, 2),
+            "net_profit_brl": round(net_profit_brl, 2),
+            "profit_pct": round(change_pct, 2),
+            "fees_paid_brl": round(total_trade_fees, 4),
+            "stake_brl": stake_brl
+        }
+        self.state["closed_trades"].append(trade_record)
+        self.state["open_positions"] = remaining
+        self.log_trade(trade_record)
+        self.add_detailed_log("TAKE_PROFIT", f"{symbol} vendido com sucesso (+{change_pct:.2f}%)! Lucro Líquido: +R$ {net_profit_brl:.2f}.")
+        print(f"\n🎉 [TAKE PROFIT DISPARADO VIA CLIENTE] {symbol} vendido a {current_price}! Lucro Líquido: +R$ {net_profit_brl:.2f}!")
+        self.save_state()
+        return {"status": "success", "sold": True, "symbol": symbol, "net_profit": net_profit_brl, "profit_pct": change_pct}
 
     def log_trade(self, trade):
         try:

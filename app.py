@@ -1300,8 +1300,23 @@ HTML_DASHBOARD = """
           if (!curPrice) return;
           
           const entryPrice = pos.entry_price;
+          const targetPrice = pos.target_price;
           const pnl = ((curPrice - entryPrice) / entryPrice) * 100;
           const isProfit = pnl >= 0;
+
+          // DISPARO IMEDIATO DE TAKE PROFIT (1s): Se bateu o alvo, fecha na hora!
+          if (targetPrice && curPrice >= targetPrice && !window[`tp_sent_${sym}`]) {
+            window[`tp_sent_${sym}`] = true;
+            fetch('/api/close_take_profit', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ symbol: sym, current_price: curPrice })
+            }).then(r => r.json()).then(res => {
+              if (res.sold) {
+                updateDashboard();
+              }
+            }).catch(e => console.error(e));
+          }
           
           const formatted = formatPrice(curPrice, sym);
           const pnlText = `${isProfit ? '+' : ''}${pnl.toFixed(2)}%`;
@@ -1487,6 +1502,21 @@ def health():
         "total_equity_brl": engine.state.get("total_equity_brl", 50.0),
         "is_paused": engine.state.get("is_paused", False)
     })
+
+@app.route('/api/close_take_profit', methods=['POST'])
+def close_take_profit():
+    try:
+        data = request.get_json(force=True, silent=True) or {}
+        symbol = data.get("symbol")
+        current_price = data.get("current_price")
+        if not symbol:
+            return jsonify({"status": "error", "message": "Symbol is required"}), 400
+        res = engine.execute_take_profit_for_symbol(symbol, current_price)
+        if res.get("sold"):
+            add_log(f"🎉 Take Profit executado em {symbol}: Lucro Líquido +R$ {res.get('net_profit', 0):.2f}!")
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/manifest.json')
 def pwa_manifest():

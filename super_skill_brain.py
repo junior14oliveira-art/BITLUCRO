@@ -83,6 +83,7 @@ class SuperSkillBrain:
         # Registra observação recente
         ts = datetime.now().strftime("%H:%M:%S")
         if pair_data_list:
+            top_asset = pair_data_list[0]
             c_sym = "R$" if (top_asset.get('symbol') or '').endswith("BRL") else "$"
             obs = f"[{ts}] {top_asset.get('symbol')}: RSI {top_asset.get('rsi')} | Preço {c_sym} {top_asset.get('price'):.2f} | Tendência: {top_asset.get('trend')}."
             self.state["last_observations"].insert(0, obs)
