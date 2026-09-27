@@ -115,13 +115,17 @@ class AIMarketStudyContingency:
         return self._generate_quantitative_thought(pair_data, macro_status, open_positions, total_equity), self.active_provider
 
     def _build_prompt(self, pair_data, macro_status, open_positions):
-        coins_summary = ", ".join([f"{p['symbol']} (RSI:{p.get('rsi_1h', 50)})" for p in pair_data[:4]])
-        pos_summary = ", ".join([f"{p['symbol']}" for p in open_positions]) if open_positions else "Nenhuma (Caixa Livre)"
+        coins_summary = ", ".join([f"{p['symbol']} (RSI:{p.get('rsi_15m') or p.get('rsi_1h', 50)})" for p in pair_data[:5]])
+        if open_positions:
+            pos_summary = ", ".join([f"{p['symbol']} ({p.get('current_pnl_pct', 0.0):+.2f}%)" for p in open_positions])
+        else:
+            pos_summary = "Nenhuma (100% Caixa Livre caçando oportunidades)"
+        now_str = datetime.now().strftime("%H:%M:%S")
         return (
-            f"Você é o cérebro quantitativo do BITLUCRO Spot na Binance. "
+            f"Horário de Brasília: [{now_str}]. Você é o cérebro quantitativo do BITLUCRO Spot na Binance. "
             f"Mercado Macro: {macro_status}. Posições em custódia: {pos_summary}. "
-            f"Top Pares: {coins_summary}. "
-            f"Em 2 frases objetivas, dê sua leitura técnica profissional do momento em Português do Brasil."
+            f"Top Pares em radar: {coins_summary}. "
+            f"Em 2 frases objetivas, inicie obrigatoriamente com '[{now_str}] ' e apresente sua leitura técnica de mercado e o que está buscando agora."
         )
 
     def _try_gemini(self, pair_data, macro_status, open_positions):
@@ -222,24 +226,23 @@ class AIMarketStudyContingency:
         is_bull = "BULL" in macro_status
         macro_text = "tendência macro de alta consolidada (BTC acima da SMA 200)" if is_bull else "correção macro global defensiva"
 
-        pos_text = ""
         if open_positions:
-            top_pos = open_positions[0]
-            pos_text = f"Custódia ativa em {top_pos['symbol']} (PnL: {top_pos.get('current_pnl_pct', 0.0):+.2f}%) aguardando alvo programado de +2.0%."
+            pos_details = [f"{p['symbol']} ({p.get('current_pnl_pct', 0.0):+.2f}%)" for p in open_positions]
+            pos_text = f"Custódia ativa em {len(open_positions)} par(es): {', '.join(pos_details)} aguardando alvo programado de +2.0%."
         else:
-            pos_text = "Caixa livre rastreando entradas com confluência em 15M e 1H."
+            pos_text = "Caixa 100% líquido. Varrendo o book em busca de oportunidades com confluência em 15m e 1h."
 
         top_opportunity = None
         for p in pair_data:
-            rsi = p.get("rsi_15m") or p.get("rsi") or 50
+            rsi = p.get("rsi_15m") or p.get("rsi") or p.get("rsi_1h") or 50
             if rsi <= 45:
-                top_opportunity = f"{p['symbol']} em recuo saudável (RSI {rsi})."
+                top_opportunity = f"{p['symbol']} em recuo saudável (RSI {rsi:.1f})"
                 break
 
         thought = f"[{now_str}] Mercado operando com {macro_text}. {pos_text} "
         if top_opportunity:
-            thought += f"Observando oportunidade imediata em {top_opportunity}"
+            thought += f"Radar apontando oportunidade imediata em {top_opportunity}."
         else:
-            thought += "Escaneando confluência multi-tempo (15m, 1h e 4h) sem pressa, preservando capital."
+            thought += "Escaneando confluência multi-tempo (15m, 1h e 4h) sem pressa, protegendo o patrimônio."
 
         return thought

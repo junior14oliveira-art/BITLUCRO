@@ -1,10 +1,10 @@
 {
   "mode": "PAPER_TRADING_SPOT",
-  "initial_capital_brl": 50.0,
-  "cash_balance_brl": 20.19,
-  "total_equity_brl": 50.19,
+  "initial_capital_brl": 1000.0,
+  "cash_balance_brl": 920.115,
+  "total_equity_brl": 1000.25,
   "accumulated_profit_brl": 0.24,
-  "profit_pct": 0.38,
+  "profit_pct": 0.03,
   "open_positions": [
     {
       "symbol": "BTCBRL",
@@ -14,8 +14,8 @@
       "target_price": 448065.6,
       "stake_brl": 10.0,
       "buy_fee_brl": 0.015,
-      "current_price": 441651.0,
-      "current_pnl_pct": 0.54,
+      "current_price": 440465.0,
+      "current_pnl_pct": 0.27,
       "reason": "RSI 1H (60.6) + Alinhamento EMA9/21 (ALTA ↗)"
     },
     {
@@ -27,8 +27,8 @@
       "target_price": 86213.6538,
       "stake_brl": 10.0,
       "buy_fee_brl": 0.015,
-      "current_price": 84963.88,
-      "current_pnl_pct": 0.52,
+      "current_price": 84757.42,
+      "current_pnl_pct": 0.28,
       "reason": "[1H] Swing Pullback 1H (RSI 68.3 + EMA9/21 ALTA ↗)"
     },
     {
@@ -40,10 +40,24 @@
       "target_price": 2757.2232,
       "stake_brl": 10.0,
       "buy_fee_brl": 0.015,
-      "current_price": 2713.62,
-      "current_pnl_pct": 0.39,
+      "current_price": 2704.57,
+      "current_pnl_pct": 0.05,
       "ml_score": 66.7,
       "reason": "[1H] Swing Pullback 1H (RSI 62.6 + EMA9/21 ALTA ↗) (ML: 66.7%)"
+    },
+    {
+      "symbol": "QNTUSDT",
+      "name": "QNT (USDT)",
+      "timeframe": "15m",
+      "entry_time": "27/09 10:12:15",
+      "entry_price": 161.59,
+      "target_price": 164.8218,
+      "stake_brl": 50.0,
+      "buy_fee_brl": 0.075,
+      "current_price": 161.59,
+      "current_pnl_pct": 0.0,
+      "ml_score": 80.8,
+      "reason": "[15m] Scalp Dip 15M (RSI 25.6 em suporte de 1H) (ML: 80.8%)"
     }
   ],
   "closed_trades": [
@@ -63,19 +77,19 @@
   ],
   "win_count": 1,
   "loss_count": 0,
-  "last_macro_status": "BULL 🟢 (BTC: $84,964 > SMA200: $71,112)",
-  "current_thought": "[23:32] Mercado operando com tendência macro de alta consolidada (BTC acima da SMA 200). Custódia ativa em SOLBRL (PnL: +0.65%) aguardando alvo programado de +2.0%. Observando oportunidade imediata em ZECUSDT em recuo saudável (RSI 38.1).",
-  "last_update": "27/09/2026 09:55:09",
+  "last_macro_status": "BULL 🟢 (BTC: $84,758 > SMA200: $71,111)",
+  "current_thought": "[10:12:15] Mercado operando com tendência macro de alta consolidada (BTC acima da SMA 200). Custódia ativa em 4 par(es): BTCBRL (+0.27%), BTCUSDT (+0.28%), ETHUSDT (+0.05%), QNTUSDT (+0.00%) aguardando alvo programado de +2.0%. Radar apontando oportunidade imediata em ZECUSDT em recuo saudável (RSI 42.4).",
+  "last_update": "27/09/2026 10:12:15",
   "is_paused": false,
-  "api_latency_ms": 6782,
+  "api_latency_ms": 23006,
   "super_skill": {
     "skill_name": "BITLUCRO Quantitative Spot Playbook",
     "version": "1.0.0",
     "brain_level": 1,
     "level_title": "Analista Quantitativo Júnior",
-    "total_cycles_studied": 5,
+    "total_cycles_studied": 6,
     "hours_studied": 0.1,
-    "patterns_identified": 0,
+    "patterns_identified": 4,
     "key_learnings": [
       {
         "title": "Filtro Macro SMA 200 Institucional",
@@ -97,18 +111,34 @@
       }
     ],
     "last_observations": [
+      "[10:12:15] BTCUSDT: RSI None | Preço $ 84765.49 | Tendência: ALTA ↗.",
       "[23:32:52] BTCUSDT: RSI None | Preço R$ 84535.99 | Tendência: ALTA ↗.",
       "[23:17:37] BTCUSDT: RSI None | Preço R$ 84494.01 | Tendência: ALTA ↗.",
       "[23:10:19] BTCUSDT: RSI None | Preço R$ 84523.19 | Tendência: ALTA ↗.",
       "[23:04:21] SOLBRL: RSI None | Preço R$ 630.70 | Tendência: ALTA ↗.",
       "[22:52:42] SOLBRL: RSI 50.6 | Preço R$ 631.20 | Tendência: ALTA ↗."
     ],
-    "last_update": "26/09/2026 23:32:52"
+    "last_update": "27/09/2026 10:12:15"
   },
-  "total_fees_paid_brl": 0.0903,
+  "total_fees_paid_brl": 0.1653,
   "gross_profit_brl": 0.9785,
   "active_ai_provider": "Motor Quantitativo Local (Heurístico 24/7)",
   "detailed_logs": [
+    {
+      "time": "10:12:15",
+      "type": "COMPRA_EXECUTADA",
+      "msg": "[15m] Compra de R$ 50.00 em QNTUSDT a 161.5900 [ML Score: 80.8%]. Taxa: R$ 0.075."
+    },
+    {
+      "time": "10:11:58",
+      "type": "FILTRO_HISTORICO",
+      "msg": "NEARUSDT bloqueado: Ativo em Resistência Máxima dos últimos 21 dias (90.6% do range). Evitando compra no topo."
+    },
+    {
+      "time": "10:11:51",
+      "type": "ML_BLOCK",
+      "msg": "SOLUSDT barrado pelo ML (58.5% prob.): [REJEITADO ML - RISCO/TOPO]"
+    },
     {
       "time": "09:55:09",
       "type": "TAKE_PROFIT",

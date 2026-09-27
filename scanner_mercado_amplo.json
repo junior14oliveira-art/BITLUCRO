@@ -1,103 +1,103 @@
 {
   "total_pairs_market": 3716,
   "selected_count": 12,
-  "last_scan_time": "27/09/2026 09:49:26",
+  "last_scan_time": "27/09/2026 10:11:39",
   "pairs": [
     {
       "symbol": "BTCUSDT",
       "name": "BTC (USDT)",
       "quote": "USDT",
-      "price": 84963.88,
-      "change_24h_pct": 1.064,
-      "volume_quote": 844630784.7855407
+      "price": 84757.65,
+      "change_24h_pct": 0.929,
+      "volume_quote": 850789797.6810907
     },
     {
       "symbol": "ZECUSDT",
       "name": "ZEC (USDT)",
       "quote": "USDT",
-      "price": 1670.5,
-      "change_24h_pct": 8.612,
-      "volume_quote": 326268129.11782
+      "price": 1650.05,
+      "change_24h_pct": 7.223,
+      "volume_quote": 330806522.47861
     },
     {
       "symbol": "ETHUSDT",
       "name": "ETH (USDT)",
       "quote": "USDT",
-      "price": 2713.81,
-      "change_24h_pct": 0.929,
-      "volume_quote": 318405475.302361
+      "price": 2704.57,
+      "change_24h_pct": 0.678,
+      "volume_quote": 324744056.611873
     },
     {
       "symbol": "SOLUSDT",
       "name": "SOL (USDT)",
       "quote": "USDT",
-      "price": 123.95,
-      "change_24h_pct": 2.421,
-      "volume_quote": 274685603.97212
+      "price": 123.11,
+      "change_24h_pct": 1.946,
+      "volume_quote": 279603037.33549
     },
     {
       "symbol": "XRPUSDT",
       "name": "XRP (USDT)",
       "quote": "USDT",
-      "price": 1.5428,
-      "change_24h_pct": 0.097,
-      "volume_quote": 176846195.62691
+      "price": 1.5266,
+      "change_24h_pct": -0.877,
+      "volume_quote": 181325574.23556
     },
     {
       "symbol": "NEARUSDT",
       "name": "NEAR (USDT)",
       "quote": "USDT",
-      "price": 5.197,
-      "change_24h_pct": 7.487,
-      "volume_quote": 174086415.0287
+      "price": 5.141,
+      "change_24h_pct": 6.527,
+      "volume_quote": 176722201.5571
     },
     {
       "symbol": "WLDUSDT",
       "name": "WLD (USDT)",
       "quote": "USDT",
-      "price": 0.5812,
-      "change_24h_pct": 19.123,
-      "volume_quote": 102800479.46886
+      "price": 0.5718,
+      "change_24h_pct": 17.654,
+      "volume_quote": 106489597.83139
     },
     {
       "symbol": "SUIUSDT",
       "name": "SUI (USDT)",
       "quote": "USDT",
-      "price": 1.2679,
-      "change_24h_pct": 8.238,
-      "volume_quote": 101295083.48375
+      "price": 1.2493,
+      "change_24h_pct": 7.08,
+      "volume_quote": 104155191.424
     },
     {
       "symbol": "QNTUSDT",
       "name": "QNT (USDT)",
       "quote": "USDT",
-      "price": 160.62,
-      "change_24h_pct": 54.636,
-      "volume_quote": 99703754.80509
+      "price": 161.4,
+      "change_24h_pct": 55.521,
+      "volume_quote": 101269078.93923
     },
     {
       "symbol": "VTHOUSDT",
       "name": "VTHO (USDT)",
       "quote": "USDT",
-      "price": 0.000761,
-      "change_24h_pct": -6.74,
-      "volume_quote": 71882419.412798
+      "price": 0.000762,
+      "change_24h_pct": -6.732,
+      "volume_quote": 72301107.435682
     },
     {
       "symbol": "DOGEUSDT",
       "name": "DOGE (USDT)",
       "quote": "USDT",
-      "price": 0.09874,
-      "change_24h_pct": 1.47,
-      "volume_quote": 58466624.05237
+      "price": 0.09734,
+      "change_24h_pct": 0.185,
+      "volume_quote": 61727707.75204
     },
     {
-      "symbol": "TAOUSDT",
-      "name": "TAO (USDT)",
+      "symbol": "UNIUSDT",
+      "name": "UNI (USDT)",
       "quote": "USDT",
-      "price": 333.7,
-      "change_24h_pct": 0.938,
-      "volume_quote": 57049029.68609
+      "price": 9.795,
+      "change_24h_pct": 2.319,
+      "volume_quote": 57878723.75212
     }
   ]
 }

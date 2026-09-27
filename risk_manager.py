@@ -7,12 +7,12 @@ Regra: A estratégia NUNCA executa ordens diretamente. Toda ordem passa pelo Ris
 from datetime import datetime
 
 class RiskManager:
-    def __init__(self, initial_capital=50.0):
+    def __init__(self, initial_capital=1000.0):
         self.initial_capital = initial_capital
-        self.max_risk_per_trade = 10.00     # R$ 10,00 por entrada (20% da banca inicial)
+        self.max_risk_per_trade = 50.00     # R$ 50,00 por entrada (5% da banca de R$ 1.000)
         self.max_drawdown_limit_pct = 10.0  # Limite máximo de perda acumulada: -10%
         self.max_daily_loss_pct = 6.0       # Perda máxima permitida no dia: -6%
-        self.max_open_positions = 4         # No máximo 4 posições simultâneas (R$ 40 em risco)
+        self.max_open_positions = 12        # Até 12 posições simultâneas (R$ 600 em risco, R$ 400 em caixa)
         self.max_consecutive_losses = 2     # Cooldown após 2 perdas seguidas
 
     def evaluate_order(self, state, symbol, order_size_brl):
@@ -21,7 +21,7 @@ class RiskManager:
         Retorna: (allowed: bool, reason: str, risk_status: str)
         """
         cash = state.get("cash_balance_brl", 0.0)
-        equity = state.get("total_equity_brl", 50.0)
+        equity = state.get("total_equity_brl", 1000.0)
         open_positions = state.get("open_positions", [])
         consecutive_losses = state.get("consecutive_losses", 0)
 

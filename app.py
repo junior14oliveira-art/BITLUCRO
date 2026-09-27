@@ -299,10 +299,10 @@ HTML_DASHBOARD = """
           <span>Patrimônio Total</span>
           <i class="fa-solid fa-vault text-amber-400/80"></i>
         </div>
-        <div class="text-2xl font-black text-white mono mt-1.5" id="totalEquity">R$ 50,00</div>
+        <div class="text-2xl font-black text-white mono mt-1.5" id="totalEquity">R$ 1.000,00</div>
         <div class="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
           <span>Banca Inicial:</span>
-          <span class="mono font-semibold text-slate-300" id="initialCapital">R$ 50,00</span>
+          <span class="mono font-semibold text-slate-300" id="initialCapital">R$ 1.000,00</span>
         </div>
       </div>
 
@@ -312,7 +312,7 @@ HTML_DASHBOARD = """
           <span>Caixa Livre (BRL)</span>
           <i class="fa-solid fa-money-bill-wave text-emerald-400/80"></i>
         </div>
-        <div class="text-2xl font-black text-emerald-400 mono mt-1.5" id="cashBalance">R$ 40,00</div>
+        <div class="text-2xl font-black text-emerald-400 mono mt-1.5" id="cashBalance">R$ 970,00</div>
         <div class="text-[11px] text-slate-400 mt-1">Disponível para Compras</div>
       </div>
 
@@ -576,14 +576,14 @@ HTML_DASHBOARD = """
         <h3 class="text-base font-bold text-white">Reiniciar Simulação?</h3>
       </div>
       <p class="text-xs text-slate-300 leading-relaxed">
-        Esta ação irá zerar todas as posições em andamento, o histórico de lucros e restaurar o caixa exatamente para <b>R$ 50,00</b>. Tem certeza?
+        Esta ação irá zerar todas as posições em andamento, o histórico de lucros e restaurar o caixa exatamente para <b>R$ 1.000,00</b>. Tem certeza?
       </p>
       <div class="flex items-center justify-end space-x-2 pt-2">
         <button onclick="toggleResetModal(false)" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold px-4 py-2 rounded-lg transition">
           Cancelar
         </button>
         <button onclick="executeReset()" class="text-xs bg-rose-600 hover:bg-rose-500 text-white font-bold px-4 py-2 rounded-lg transition shadow-md">
-          Sim, Resetar R$ 50
+          Sim, Resetar R$ 1.000
         </button>
       </div>
     </div>
@@ -1490,8 +1490,8 @@ def toggle_pause():
 @app.route('/api/reset', methods=['POST'])
 def reset_simulation():
     engine.reset_simulation()
-    add_log("Simulador reiniciado. Banca restaurada para R$ 50,00.")
-    return jsonify({"status": "success", "message": "Simulação restaurada para R$ 50,00."})
+    add_log("Simulador reiniciado. Banca restaurada para R$ 1.000,00.")
+    return jsonify({"status": "success", "message": "Simulação restaurada para R$ 1.000,00."})
 
 @app.route('/health')
 def health():
@@ -1499,7 +1499,7 @@ def health():
         "status": "UP",
         "service": "BITLUCRO Binance Spot Bot",
         "time": datetime.now().isoformat(),
-        "total_equity_brl": engine.state.get("total_equity_brl", 50.0),
+        "total_equity_brl": engine.state.get("total_equity_brl", 1000.0),
         "is_paused": engine.state.get("is_paused", False)
     })
 

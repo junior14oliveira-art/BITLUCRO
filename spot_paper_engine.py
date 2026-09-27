@@ -4,7 +4,7 @@ ROBÔ QUANTITATIVO BINANCE SPOT (SIMULADOR PAPER TRADING ULTRA-REALISTA)
 - Simulação Fiel com Taxas Oficiais da Binance (0.10% Maker/Taker + 0.05% Slippage)
 - Motor Multi-Timeframe Ativo: 15M (Scalp Dips), 1H (Swing) e 4H (Macro Estrutura)
 - Contingência Ampla de IA: Google Gemini -> Groq AI -> Motor Quantitativo Local (24/7)
-- Banca Inicial Simulada: R$ 50,00 | Ordem Mínima: R$ 10,00
+- Banca Inicial Simulada: R$ 1.000,00 | Ordem Padrão: R$ 50,00 (Diversificação até 12 posições)
 """
 
 import requests
@@ -38,9 +38,9 @@ from ml_quant_predictor import MLQuantPredictor
 BINANCE_API_URL = "https://api.binance.com/api/v3"
 
 # Configurações do Simulador e Taxas Reais da Binance
-INITIAL_BANKROLL_BRL = 50.00       # Banca inicial simulada
-ORDER_SIZE_BRL = 10.00             # R$ 10,00 por ordem (mínimo da Binance)
-TAKE_PROFIT_PCT = 2.0              # Alvo de lucro: +2.0% por operação
+INITIAL_BANKROLL_BRL = 1000.00      # Banca inicial simulada ampliada (R$ 1.000,00)
+ORDER_SIZE_BRL = 50.00              # R$ 50,00 por ordem (diversificação em até 12 posições)
+TAKE_PROFIT_PCT = 2.0               # Alvo de lucro: +2.0% por operação
 
 # Custos Reais da Corretora (Binance Spot)
 BINANCE_FEE_PCT = 0.10             # Taxa padrão Spot Maker/Taker Binance (0.10%)
@@ -107,7 +107,7 @@ class BinanceSpotPaperEngine:
         }
 
     def reset_simulation(self):
-        """Redefine o simulador para a banca original de R$ 50,00."""
+        """Redefine o simulador para a banca original de R$ 1.000,00."""
         self.state = {
             "mode": "PAPER_TRADING_SPOT",
             "initial_capital_brl": INITIAL_BANKROLL_BRL,
@@ -125,7 +125,7 @@ class BinanceSpotPaperEngine:
             "api_latency_ms": 65,
             "last_macro_status": "BULL 🟢 (Aguardando novo ciclo)",
             "active_ai_provider": "Motor Quantitativo Local (Zero Downtime)",
-            "current_thought": "Simulação reiniciada com sucesso. Banca restaurada para R$ 50,00.",
+            "current_thought": "Simulação reiniciada com sucesso. Banca restaurada para R$ 1.000,00.",
             "detailed_logs": [],
             "last_update": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         }
@@ -324,6 +324,8 @@ class BinanceSpotPaperEngine:
                 self.state["closed_trades"].append(trade_record)
                 self.log_trade(trade_record)
                 self.add_detailed_log("TAKE_PROFIT", f"{sym} bateu alvo (+{change_pct:.2f}%)! Lucro Líquido Real: +R$ {net_profit_brl:.2f} (Taxa Binance: R$ {total_trade_fees:.3f}).")
+                now_t = datetime.now().strftime("%H:%M:%S")
+                self.state["current_thought"] = f"[{now_t}] 🎉 Alvo atingido! {sym} liquidado com sucesso (+{change_pct:.2f}% | Lucro Líquido: +R$ {net_profit_brl:.2f}). Caixa livre ampliado para R$ {self.state['cash_balance_brl']:.2f}. Caçando novas oportunidades!"
                 print(f"\n🎉 [TAKE PROFIT SPOT REAL] {sym} vendido! Lucro Líquido: +R$ {net_profit_brl:.2f} | Taxas Pagas: R$ {total_trade_fees:.3f}!")
             else:
                 pos["current_price"] = current_price
@@ -390,6 +392,16 @@ class BinanceSpotPaperEngine:
         self.state["open_positions"] = remaining
         self.log_trade(trade_record)
         self.add_detailed_log("TAKE_PROFIT", f"{symbol} vendido com sucesso (+{change_pct:.2f}%)! Lucro Líquido: +R$ {net_profit_brl:.2f}.")
+
+        # Recalcula patrimônio total e percentual de lucro imediatamente
+        rem_pos_val = sum(p["stake_brl"] * (1 + (p.get("current_pnl_pct", 0.0)/100.0)) for p in remaining)
+        self.state["total_equity_brl"] = round(self.state["cash_balance_brl"] + rem_pos_val, 2)
+        total_profit = self.state["total_equity_brl"] - self.state["initial_capital_brl"]
+        self.state["profit_pct"] = round((total_profit / self.state["initial_capital_brl"]) * 100, 2)
+
+        now_t = datetime.now().strftime("%H:%M:%S")
+        self.state["current_thought"] = f"[{now_t}] 🎉 Alvo atingido! {symbol} vendido a {current_price} (+{change_pct:.2f}% | Lucro Líquido: +R$ {net_profit_brl:.2f}). Caixa livre ampliado para R$ {self.state['cash_balance_brl']:.2f}. Caçando novas oportunidades no mercado!"
+
         print(f"\n🎉 [TAKE PROFIT DISPARADO VIA CLIENTE] {symbol} vendido a {current_price}! Lucro Líquido: +R$ {net_profit_brl:.2f}!")
         self.save_state()
         return {"status": "success", "sold": True, "symbol": symbol, "net_profit": net_profit_brl, "profit_pct": change_pct}
@@ -410,7 +422,7 @@ class BinanceSpotPaperEngine:
     def run_cycle(self):
         t0 = time.time()
         print("\n" + "=" * 68)
-        print("🤖 ROBÔ BINANCE SPOT (SIMULADOR PAPER TRADING - BANCA R$ 50,00)")
+        print("🤖 ROBÔ BINANCE SPOT (SIMULADOR PAPER TRADING - BANCA R$ 1.000,00)")
         print(f"💰 Saldo Líquido: R$ {self.state['cash_balance_brl']:.2f} | Patrimônio Total: R$ {self.state['total_equity_brl']:.2f}")
         print(f"📈 Lucro Acumulado: R$ {self.state['accumulated_profit_brl']:.2f} ({self.state['profit_pct']:+.2f}%) | Taxas Pagas: R$ {self.state.get('total_fees_paid_brl', 0.0):.3f}")
         print("=" * 68)
@@ -554,9 +566,11 @@ class BinanceSpotPaperEngine:
                     "reason": f"[{matched_tf}] {setup_desc} (ML: {ml_res.get('confidence_score_pct')}%)"
                 }
                 self.state["open_positions"].append(new_position)
-                self.add_detailed_log("COMPRA_EXECUTADA", f"[{matched_tf}] Compra de R$ 10 em {sym} a {price:.4f} [ML Score: {ml_res.get('confidence_score_pct')}%]. Taxa: R$ {buy_fee_brl:.3f}.")
+                self.add_detailed_log("COMPRA_EXECUTADA", f"[{matched_tf}] Compra de R$ {ORDER_SIZE_BRL:.2f} em {sym} a {price:.4f} [ML Score: {ml_res.get('confidence_score_pct')}%]. Taxa: R$ {buy_fee_brl:.3f}.")
                 print(f"\n🛒 [COMPRA EXECUTADA SPOT ({matched_tf})]: R$ {ORDER_SIZE_BRL:.2f} de {sym} a {price:.4f} [ML: {ml_res.get('confidence_score_pct')}%]!")
                 print(f"💸 Taxa Binance Descontada: R$ {buy_fee_brl:.3f} | Alvo Líquido (+2%): {target_profit_price:.4f}")
+                now_t = datetime.now().strftime("%H:%M:%S")
+                self.state["current_thought"] = f"[{now_t}] 🛒 Nova compra executada: R$ {ORDER_SIZE_BRL:.2f} em {sym} ({matched_tf}) a {price:.4f} [ML: {ml_res.get('confidence_score_pct')}%]. Alvo líquido programado em {target_profit_price:.4f} (+2.0%)."
                 self.save_state()
                 break
 
