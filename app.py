@@ -56,6 +56,20 @@ def background_trading_loop():
 worker_thread = threading.Thread(target=background_trading_loop, daemon=True)
 worker_thread.start()
 
+# Rastreador de PnL e Alvos Ultrarrápido (executa a cada 3s)
+def fast_pnl_tracker_loop():
+    time.sleep(4)
+    while True:
+        try:
+            if engine.state.get("open_positions"):
+                engine.update_open_positions_pnl()
+        except Exception:
+            pass
+        time.sleep(3)
+
+pnl_thread = threading.Thread(target=fast_pnl_tracker_loop, daemon=True)
+pnl_thread.start()
+
 HTML_DASHBOARD = """
 <!DOCTYPE html>
 <html lang="pt-BR" class="dark">
@@ -356,6 +370,9 @@ HTML_DASHBOARD = """
         <div class="flex items-center space-x-2">
           <i class="fa-solid fa-layer-group text-amber-400"></i>
           <h2 class="text-sm font-bold text-white tracking-wide">Ativos em Custódia Spot (Posições Abertas)</h2>
+          <span class="inline-flex items-center gap-1.5 text-[10px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold ml-1.5 shadow-sm" title="Preços e porcentagens atualizados a cada 1 segundo direto da Binance">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> TEMPO REAL (1s)
+          </span>
         </div>
         <div class="flex items-center space-x-2 text-xs text-slate-400">
           <span class="mono bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700/60" id="openCount">0 ativas</span>
@@ -911,6 +928,7 @@ HTML_DASHBOARD = """
 
         // 3. Tabela de Posições Abertas (Custódia Spot)
         const positions = data.open_positions || [];
+        window.currentPositions = positions;
         document.getElementById('openCount').innerText = `${positions.length} ativa${positions.length === 1 ? '' : 's'}`;
         const pTable = document.getElementById('positionsTable');
 
@@ -939,10 +957,10 @@ HTML_DASHBOARD = """
                 </td>
                 <td class="py-2.5 px-3 text-slate-400 text-[11px]">${pos.entry_time}</td>
                 <td class="py-2.5 px-3 mono text-slate-300">R$/$ ${pos.entry_price.toFixed(4)}</td>
-                <td class="py-2.5 px-3 mono text-white font-bold">R$/$ ${curPrice.toFixed(4)}</td>
+                <td class="py-2.5 px-3 mono text-white font-bold transition-colors duration-300" id="livePrice_${pos.symbol}">R$/$ ${curPrice.toFixed(4)}</td>
                 <td class="py-2.5 px-3 mono text-emerald-400 font-semibold">R$/$ ${pos.target_price.toFixed(4)} <span class="text-[10px] text-emerald-500">(+2%)</span></td>
                 <td class="py-2.5 px-3">
-                  <span class="px-2 py-0.5 rounded font-mono font-bold text-[11px] ${pnlClass}">
+                  <span id="livePnl_${pos.symbol}" class="px-2 py-0.5 rounded font-mono font-bold text-[11px] transition-all duration-300 ${pnlClass}">
                     ${isProfit ? '+' : ''}${pnl.toFixed(2)}%
                   </span>
                 </td>
@@ -1094,7 +1112,64 @@ HTML_DASHBOARD = """
       }
     }
 
+    // ==========================================
+    // COTAÇÕES E PORCENTAGENS EM TEMPO REAL (1 SEGUNDO DIRETO DA BINANCE)
+    // ==========================================
+    let livePrices = {};
+    let previousPrices = {};
+
+    async function updateLiveTicker() {
+      if (!window.currentPositions || window.currentPositions.length === 0) return;
+      const symbols = [...new Set(window.currentPositions.map(p => p.symbol))];
+      try {
+        const formatted = encodeURIComponent(JSON.stringify(symbols));
+        const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbols=${formatted}`);
+        if (!res.ok) return;
+        const items = await res.json();
+        
+        items.forEach(t => {
+          const sym = t.symbol;
+          const newPrice = parseFloat(t.price);
+          if (livePrices[sym]) previousPrices[sym] = livePrices[sym];
+          else previousPrices[sym] = newPrice;
+          livePrices[sym] = newPrice;
+        });
+
+        window.currentPositions.forEach(pos => {
+          const sym = pos.symbol;
+          const curPrice = livePrices[sym];
+          if (!curPrice) return;
+          
+          const entryPrice = pos.entry_price;
+          const pnl = ((curPrice - entryPrice) / entryPrice) * 100;
+          const isProfit = pnl >= 0;
+          
+          const priceEl = document.getElementById(`livePrice_${sym}`);
+          const pnlEl = document.getElementById(`livePnl_${sym}`);
+          
+          if (priceEl) {
+            priceEl.innerText = `R$/$ ${curPrice.toFixed(4)}`;
+            if (curPrice > previousPrices[sym]) {
+              priceEl.classList.add('text-emerald-400');
+              setTimeout(() => priceEl.classList.remove('text-emerald-400'), 450);
+            } else if (curPrice < previousPrices[sym]) {
+              priceEl.classList.add('text-rose-400');
+              setTimeout(() => priceEl.classList.remove('text-rose-400'), 450);
+            }
+          }
+          
+          if (pnlEl) {
+            pnlEl.innerText = `${isProfit ? '+' : ''}${pnl.toFixed(2)}%`;
+            pnlEl.className = `px-2 py-0.5 rounded font-mono font-bold text-[11px] transition-all duration-300 ${isProfit ? 'text-emerald-400 bg-emerald-500/10' : 'text-amber-400 bg-amber-500/10'}`;
+          }
+        });
+      } catch (err) {
+        // Silencioso em caso de falha transitória
+      }
+    }
+
     setInterval(updateDashboard, 4000);
+    setInterval(updateLiveTicker, 1000);
     updateDashboard();
   </script>
 </body>
