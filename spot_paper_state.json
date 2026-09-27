@@ -1,0 +1,27 @@
+{
+  "mode": "PAPER_TRADING_SPOT",
+  "initial_capital_brl": 50.0,
+  "cash_balance_brl": 40.0,
+  "total_equity_brl": 50.0,
+  "accumulated_profit_brl": 0.0,
+  "profit_pct": 0.0,
+  "open_positions": [
+    {
+      "symbol": "SOLBRL",
+      "name": "Solana (BRL)",
+      "entry_time": "26/09 22:37:24",
+      "entry_price": 628.1,
+      "target_price": 640.662,
+      "stake_brl": 10.0,
+      "current_price": 628.1,
+      "current_pnl_pct": 0.0,
+      "reason": "RSI 1H (45.1) + Alinhamento EMA9/21"
+    }
+  ],
+  "closed_trades": [],
+  "win_count": 0,
+  "loss_count": 0,
+  "last_macro_status": "BULL 🟢 (BTC: $84,314 > SMA200: $71,108)",
+  "current_thought": "Iniciando simulador com cotações oficiais da Binance...",
+  "last_update": "26/09/2026 22:37:24"
+}

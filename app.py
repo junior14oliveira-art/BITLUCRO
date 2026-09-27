@@ -1,0 +1,686 @@
+"""
+BITLUCRO - Robô Quantitativo Binance Spot 24/7 (Hospedagem Render)
+Servidor Web Flask + Dashboard Moderno com Heurísticas de Usabilidade de Nielsen
+"""
+
+import os
+import sys
+import io
+import json
+import time
+import threading
+from datetime import datetime
+from flask import Flask, jsonify, render_template_string, request
+
+# Configuração de encoding para UTF-8 seguro
+if sys.platform == 'win32':
+    try:
+        if hasattr(sys.stdout, 'reconfigure'):
+            sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+        if hasattr(sys.stderr, 'reconfigure'):
+            sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        pass
+
+# Importa o motor de trading
+from spot_paper_engine import BinanceSpotPaperEngine, STATE_FILE
+
+app = Flask(__name__)
+engine = BinanceSpotPaperEngine()
+
+# Histórico de logs para exibição no dashboard web
+activity_logs = [
+    f"[{datetime.now().strftime('%H:%M:%S')}] BITLUCRO inicializado. Conexão pública com Binance Spot ativa."
+]
+
+def add_log(msg):
+    ts = datetime.now().strftime("%H:%M:%S")
+    entry = f"[{ts}] {msg}"
+    activity_logs.insert(0, entry)
+    if len(activity_logs) > 35:
+        activity_logs.pop()
+
+# Worker em segundo plano (roda 24/7)
+def background_trading_loop():
+    time.sleep(2)
+    add_log("Worker 24/7 em execução contínua. Intervalo de análise: 60s.")
+    while True:
+        try:
+            engine.run_cycle()
+            status = engine.state.get("last_macro_status", "Ativo")
+            add_log(f"Ciclo executado. Macro: {status} | Saldo: R$ {engine.state['cash_balance_brl']:.2f}")
+        except Exception as e:
+            add_log(f"Alerta no ciclo: {str(e)}")
+        time.sleep(60)
+
+worker_thread = threading.Thread(target=background_trading_loop, daemon=True)
+worker_thread.start()
+
+HTML_DASHBOARD = """
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BITLUCRO | Binance Spot Bot 24/7</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 500: '#F0B90B', 600: '#D9A408' },
+            darkbg: '#0B0E14',
+            cardbg: '#121722',
+            bordercol: '#1E2538'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0B0E14; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .pulse-dot {
+      box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+      animation: pulseAnim 2s infinite;
+    }
+    @keyframes pulseAnim {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+    }
+    .custom-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+    .custom-scroll::-webkit-scrollbar-track { background: #0e121a; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #232c3f; border-radius: 4px; }
+  </style>
+</head>
+<body class="text-slate-100 min-h-screen flex flex-col justify-between antialiased selection:bg-amber-500/30 selection:text-amber-300">
+
+  <!-- ==========================================
+       HEURÍSTICA #1 & #4: CABEÇALHO COM VISIBILIDADE DO STATUS
+       ========================================== -->
+  <header class="border-b border-slate-800/80 bg-cardbg/80 backdrop-blur-md sticky top-0 z-40 px-4 py-3">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+      
+      <!-- Logo e Identificação -->
+      <div class="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-start">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 font-extrabold text-xl shadow-lg">
+            <i class="fa-brands fa-bitcoin"></i>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <h1 class="text-lg font-black tracking-tight text-white flex items-center gap-1.5">
+                BITLUCRO <span class="text-amber-400 text-xs px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 font-bold">SPOT PRO</span>
+              </h1>
+            </div>
+            <p class="text-[11px] text-slate-400">Algoritmo Quantitativo 24/7 | Proteção Sem Liquidação</p>
+          </div>
+        </div>
+
+        <!-- Botão Ajuda / Heurística #10 -->
+        <button onclick="toggleHelpModal(true)" class="sm:hidden text-slate-400 hover:text-white p-2 text-sm" title="Guia do Investidor">
+          <i class="fa-solid fa-circle-question"></i>
+        </button>
+      </div>
+
+      <!-- Barra de Status do Sistema & Controles Rápidos -->
+      <div class="flex items-center space-x-2.5 w-full sm:w-auto justify-end flex-wrap gap-y-2">
+        
+        <!-- Status da API Binance (Heurística #1) -->
+        <div class="flex items-center space-x-2 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg text-xs" title="Status da Conexão com Binance Spot">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 pulse-dot" id="statusDot"></span>
+          <span class="font-bold text-emerald-400 uppercase tracking-wider text-[11px]" id="statusText">ONLINE 24H</span>
+          <span class="text-slate-500">|</span>
+          <span class="mono text-slate-400 text-[11px]" id="latencyBadge"><i class="fa-solid fa-bolt text-amber-400 text-[10px]"></i> 54ms</span>
+        </div>
+
+        <!-- Botão Pausar / Retomar (Heurística #3: Liberdade e Controle) -->
+        <button onclick="togglePause()" id="btnPause" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition">
+          <i class="fa-solid fa-pause" id="pauseIcon"></i>
+          <span id="pauseLabel">Pausar</span>
+        </button>
+
+        <!-- Botão Escanear Agora -->
+        <button onclick="triggerScan()" id="btnScan" class="text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition shadow">
+          <i class="fa-solid fa-arrows-rotate" id="scanIcon"></i>
+          <span>Escanear</span>
+        </button>
+
+        <!-- Botão Guia / FAQ (Heurística #10) -->
+        <button onclick="toggleHelpModal(true)" class="hidden sm:flex text-xs bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/80 font-semibold px-2.5 py-1.5 rounded-lg items-center space-x-1 transition" title="Guia e Princípios de Operação">
+          <i class="fa-solid fa-circle-question text-amber-400"></i>
+          <span>Guia</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ==========================================
+       CONTEÚDO PRINCIPAL
+       ========================================== -->
+  <main class="max-w-7xl mx-auto p-4 space-y-4 w-full flex-1">
+
+    <!-- Heurística #5: Prevenção de Erros & Heurística #6: Reconhecimento das Leis -->
+    <div class="bg-gradient-to-r from-amber-950/30 via-cardbg to-slate-900/60 border border-amber-500/20 rounded-xl p-3 sm:p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-xs shadow-md">
+      <div class="flex items-center space-x-2 text-amber-400 font-bold">
+        <i class="fa-solid fa-shield-halved text-base"></i>
+        <span>BLINDAGEM QUANTITATIVA (3 LEIS DE OURO):</span>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full md:w-auto text-slate-300">
+        <div class="bg-darkbg/90 px-3 py-1.5 rounded-lg border border-slate-800 flex items-center space-x-2">
+          <span class="text-amber-400 font-extrabold">#1</span>
+          <span>Velas de 1H (Filtro Ruído)</span>
+        </div>
+        <div class="bg-darkbg/90 px-3 py-1.5 rounded-lg border border-slate-800 flex items-center space-x-2">
+          <span class="text-emerald-400 font-extrabold">#2</span>
+          <span>Spot Real (Sem Liquidação)</span>
+        </div>
+        <div class="bg-darkbg/90 px-3 py-1.5 rounded-lg border border-slate-800 flex items-center space-x-2">
+          <span class="text-blue-400 font-extrabold">#3</span>
+          <span>BTC > SMA 200 (Tendência Macro)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Heurística #2: Correspondência com o Mundo Real (4 Cards de Métricas Financeiras) -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      
+      <!-- Patrimônio Total -->
+      <div class="bg-cardbg border border-bordercol rounded-xl p-4 shadow-sm hover:border-slate-700 transition">
+        <div class="flex items-center justify-between text-xs text-slate-400 font-medium">
+          <span>Patrimônio Total</span>
+          <i class="fa-solid fa-vault text-amber-400/80"></i>
+        </div>
+        <div class="text-2xl font-black text-white mono mt-1.5" id="totalEquity">R$ 50,00</div>
+        <div class="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
+          <span>Banca Inicial:</span>
+          <span class="mono font-semibold text-slate-300" id="initialCapital">R$ 50,00</span>
+        </div>
+      </div>
+
+      <!-- Saldo Líquido Livre -->
+      <div class="bg-cardbg border border-bordercol rounded-xl p-4 shadow-sm hover:border-slate-700 transition">
+        <div class="flex items-center justify-between text-xs text-slate-400 font-medium">
+          <span>Caixa Livre (BRL)</span>
+          <i class="fa-solid fa-money-bill-wave text-emerald-400/80"></i>
+        </div>
+        <div class="text-2xl font-black text-emerald-400 mono mt-1.5" id="cashBalance">R$ 40,00</div>
+        <div class="text-[11px] text-slate-400 mt-1">Disponível para Compras</div>
+      </div>
+
+      <!-- Lucro Líquido Acumulado -->
+      <div class="bg-cardbg border border-bordercol rounded-xl p-4 shadow-sm hover:border-slate-700 transition">
+        <div class="flex items-center justify-between text-xs text-slate-400 font-medium">
+          <span>Lucro Líquido Realizado</span>
+          <i class="fa-solid fa-chart-line-up text-blue-400/80"></i>
+        </div>
+        <div class="text-2xl font-black text-white mono mt-1.5" id="profitBrl">+R$ 0,00</div>
+        <div class="text-[11px] font-bold text-emerald-400 mt-1 mono" id="profitPct">+0.00%</div>
+      </div>
+
+      <!-- Operações & Win Rate -->
+      <div class="bg-cardbg border border-bordercol rounded-xl p-4 shadow-sm hover:border-slate-700 transition">
+        <div class="flex items-center justify-between text-xs text-slate-400 font-medium">
+          <span>Operações Finalizadas</span>
+          <i class="fa-solid fa-trophy text-amber-400/80"></i>
+        </div>
+        <div class="text-2xl font-black text-amber-400 mono mt-1.5" id="winCountBadge">0 Wins</div>
+        <div class="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
+          <span>0 Vendas no Prejuízo</span>
+          <span class="text-emerald-400 font-bold text-[10px] bg-emerald-500/10 px-1 rounded">100% SPOT</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Heurística #1: Termômetro Macro Mundial (Bitcoin vs SMA 200) -->
+    <div class="bg-cardbg border border-bordercol rounded-xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-sm">
+      <div class="flex items-center space-x-3.5">
+        <div class="w-11 h-11 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 text-xl shrink-0">
+          <i class="fa-solid fa-globe"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Termômetro Macro Mundial</span>
+            <span class="text-[10px] bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded font-mono">SMA 200 Diária</span>
+          </div>
+          <div class="text-sm font-bold text-white mt-0.5 flex items-center gap-2" id="macroStatus">
+            Carregando cotações da Binance...
+          </div>
+        </div>
+      </div>
+      <div class="text-xs text-slate-400 md:text-right bg-darkbg/70 px-3 py-2 rounded-lg border border-slate-800/80 w-full md:w-auto">
+        <span class="text-emerald-400 font-bold">🟢 Mercado de Alta (Bull):</span> Novas compras autorizadas.<br class="hidden sm:inline">
+        <span class="text-amber-400 font-bold">🛑 Mercado de Baixa (Bear):</span> Robô protege 100% do capital em caixa.
+      </div>
+    </div>
+
+    <!-- Tabela de Posições Abertas (Custódia Spot) -->
+    <div class="bg-cardbg border border-bordercol rounded-xl p-4 shadow-sm">
+      <div class="flex items-center justify-between mb-3.5">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-layer-group text-amber-400"></i>
+          <h2 class="text-sm font-bold text-white tracking-wide">Ativos em Custódia Spot (Posições Abertas)</h2>
+        </div>
+        <div class="flex items-center space-x-2 text-xs text-slate-400">
+          <span class="mono bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700/60" id="openCount">0 ativas</span>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto custom-scroll">
+        <table class="w-full text-left text-xs min-w-[620px]">
+          <thead>
+            <tr class="border-b border-bordercol text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
+              <th class="py-2.5 px-3">Ativo</th>
+              <th class="py-2.5 px-3">Data / Hora</th>
+              <th class="py-2.5 px-3">Preço Compra</th>
+              <th class="py-2.5 px-3">Cotação Atual</th>
+              <th class="py-2.5 px-3">Alvo Lucro (+2%)</th>
+              <th class="py-2.5 px-3">Rentabilidade</th>
+              <th class="py-2.5 px-3 text-right">Valor em BRL</th>
+            </tr>
+          </thead>
+          <tbody id="positionsTable" class="divide-y divide-bordercol/60 font-medium">
+            <tr>
+              <td colspan="7" class="py-6 text-center text-slate-400">
+                <i class="fa-solid fa-spinner fa-spin text-amber-400 mr-2"></i> Carregando carteira de ativos...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Grade Inferior: Histórico de Trades Fechados & Diário de Bordo do Robô -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+      <!-- Histórico de Trades Fechados com Lucro -->
+      <div class="bg-cardbg border border-bordercol rounded-xl p-4 shadow-sm flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-3.5">
+            <div class="flex items-center space-x-2">
+              <i class="fa-solid fa-circle-check text-emerald-400"></i>
+              <h2 class="text-sm font-bold text-white tracking-wide">Histórico de Operações Lucradas</h2>
+            </div>
+            <span class="mono text-xs text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700/60" id="closedCount">0 fechadas</span>
+          </div>
+
+          <div class="overflow-x-auto max-h-64 overflow-y-auto custom-scroll pr-1">
+            <table class="w-full text-left text-xs min-w-[340px]">
+              <thead>
+                <tr class="border-b border-bordercol text-slate-400 uppercase text-[11px] tracking-wider">
+                  <th class="py-2 px-2">Ativo</th>
+                  <th class="py-2 px-2">Horário Saída</th>
+                  <th class="py-2 px-2">Lucro %</th>
+                  <th class="py-2 px-2 text-right">Lucro R$</th>
+                </tr>
+              </thead>
+              <tbody id="historyTable" class="divide-y divide-bordercol/60">
+                <tr>
+                  <td colspan="4" class="py-6 text-center text-slate-400">
+                    Ainda não há operações finalizadas. O robô aguarda o alvo de +2.0% para realizar a venda automática com lucro.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Heurística #3 & #5: Ação de Reset com Prevenção de Erros -->
+        <div class="pt-3 border-t border-bordercol mt-3 flex items-center justify-between text-xs">
+          <span class="text-slate-400">Deseja zerar a simulação para R$ 50?</span>
+          <button onclick="confirmReset()" class="text-slate-400 hover:text-rose-400 transition font-medium flex items-center gap-1">
+            <i class="fa-solid fa-rotate-left"></i>
+            <span>Reiniciar Simulador</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Diário de Bordo & Logs do Robô (Heurística #9) -->
+      <div class="bg-cardbg border border-bordercol rounded-xl p-4 shadow-sm flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-3.5">
+            <div class="flex items-center space-x-2">
+              <i class="fa-solid fa-terminal text-blue-400"></i>
+              <h2 class="text-sm font-bold text-white tracking-wide">Diário de Bordo & Pensamento do Algoritmo</h2>
+            </div>
+            <span class="text-[11px] mono text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700/60">Ao Vivo</span>
+          </div>
+
+          <div id="logConsole" class="bg-darkbg border border-slate-800 rounded-lg p-3 text-xs mono text-slate-300 h-64 overflow-y-auto space-y-1.5 custom-scroll">
+            <div class="text-slate-500">Conectando ao fluxo de logs...</div>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-bordercol mt-3 flex items-center justify-between text-xs text-slate-400">
+          <span>Próxima varredura automática em: <b class="text-white mono" id="countdownTimer">60s</b></span>
+          <span class="text-[11px] text-emerald-400 font-semibold"><i class="fa-solid fa-check"></i> Binance REST v3</span>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ==========================================
+       RODAPÉ INFORMATIVO
+       ========================================== -->
+  <footer class="border-t border-bordercol bg-cardbg/50 py-3.5 px-4 text-xs text-slate-400 mt-4">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
+      <div>
+        <span class="font-bold text-white">BITLUCRO Spot Bot</span> • Ambiente de Testes Quantitativos • Cotações Oficiais da Binance em Tempo Real
+      </div>
+      <div class="mono text-slate-300 text-[11px]">
+        Última Análise: <span id="lastUpdate" class="text-white font-semibold">--</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ==========================================
+       MODAL DE CONFIRMAÇÃO DE RESET (HEURÍSTICA #5: PREVENÇÃO DE ERROS)
+       ========================================== -->
+  <div id="resetModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-cardbg border border-rose-500/40 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+      <div class="flex items-center space-x-3 text-rose-400">
+        <div class="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-xl">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <h3 class="text-base font-bold text-white">Reiniciar Simulação?</h3>
+      </div>
+      <p class="text-xs text-slate-300 leading-relaxed">
+        Esta ação irá zerar todas as posições em andamento, o histórico de lucros e restaurar o caixa exatamente para <b>R$ 50,00</b>. Tem certeza?
+      </p>
+      <div class="flex items-center justify-end space-x-2 pt-2">
+        <button onclick="toggleResetModal(false)" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold px-4 py-2 rounded-lg transition">
+          Cancelar
+        </button>
+        <button onclick="executeReset()" class="text-xs bg-rose-600 hover:bg-rose-500 text-white font-bold px-4 py-2 rounded-lg transition shadow-md">
+          Sim, Resetar R$ 50
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL GUIA DO INVESTIDOR (HEURÍSTICA #10: AJUDA E DOCUMENTAÇÃO)
+       ========================================== -->
+  <div id="helpModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-cardbg border border-bordercol rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto custom-scroll">
+      <div class="flex items-center justify-between border-b border-bordercol pb-3">
+        <div class="flex items-center space-x-2.5 text-amber-400">
+          <i class="fa-solid fa-book-bookmark text-lg"></i>
+          <h3 class="text-base font-bold text-white">Guia Rápido do Operador BITLUCRO</h3>
+        </div>
+        <button onclick="toggleHelpModal(false)" class="text-slate-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3.5 text-xs text-slate-300 leading-relaxed">
+        <div class="bg-darkbg p-3 rounded-xl border border-slate-800">
+          <b class="text-white flex items-center gap-1.5 mb-1"><i class="fa-solid fa-shield text-amber-400"></i> Por que o Mercado Spot não quebra?</b>
+          Ao contrário do mercado futuro ou opções binárias, no Spot você compra a criptomoeda real. Não há taxa de liquidação forçada. Se o preço cair, você continua dono das moedas e aguarda a valorização para vender no lucro.
+        </div>
+
+        <div class="bg-darkbg p-3 rounded-xl border border-slate-800">
+          <b class="text-white flex items-center gap-1.5 mb-1"><i class="fa-solid fa-chart-line text-blue-400"></i> O que é o Filtro Macro SMA 200?</b>
+          A Média Móvel de 200 dias do Bitcoin é o maior indicador institucional do mundo. Quando o Bitcoin está acima da SMA 200, estamos em Bull Market (compras seguras). Se cair abaixo, o robô congela compras e guarda o dinheiro 100% seguro em caixa.
+        </div>
+
+        <div class="bg-darkbg p-3 rounded-xl border border-slate-800">
+          <b class="text-white flex items-center gap-1.5 mb-1"><i class="fa-solid fa-bullseye text-emerald-400"></i> Alvo de Lucro de +2.0% (Take Profit):</b>
+          Toda ordem de R$ 10,00 tem alvo fixo programado de +2,00% de lucro líquido. Quando atingido, o robô vende automaticamente, recolhe o lucro e libera o capital para novas oportunidades.
+        </div>
+      </div>
+
+      <div class="pt-2 text-right">
+        <button onclick="toggleHelpModal(false)" class="text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-lg transition">
+          Entendi, Fechar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       SCRIPTS FRONTEND (ATUALIZAÇÃO REATIVA & REGRAS NIELSEN)
+       ========================================== -->
+  <script>
+    let countdown = 60;
+    setInterval(() => {
+      countdown = countdown > 1 ? countdown - 1 : 60;
+      const el = document.getElementById('countdownTimer');
+      if (el) el.innerText = `${countdown}s`;
+    }, 1000);
+
+    function toggleResetModal(show) {
+      document.getElementById('resetModal').classList.toggle('hidden', !show);
+    }
+
+    function toggleHelpModal(show) {
+      document.getElementById('helpModal').classList.toggle('hidden', !show);
+    }
+
+    function confirmReset() {
+      toggleResetModal(true);
+    }
+
+    async function executeReset() {
+      try {
+        await fetch('/api/reset', { method: 'POST' });
+        toggleResetModal(false);
+        countdown = 60;
+        await updateDashboard();
+      } catch (err) {
+        alert("Erro ao reiniciar: " + err);
+      }
+    }
+
+    async function togglePause() {
+      try {
+        const res = await fetch('/api/toggle_pause', { method: 'POST' });
+        const data = await res.json();
+        updatePauseUI(data.is_paused);
+        await updateDashboard();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function updatePauseUI(isPaused) {
+      const btn = document.getElementById('btnPause');
+      const icon = document.getElementById('pauseIcon');
+      const label = document.getElementById('pauseLabel');
+      if (isPaused) {
+        btn.className = "text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-bold px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition";
+        icon.className = "fa-solid fa-play";
+        label.innerText = "Retomar";
+      } else {
+        btn.className = "text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition";
+        icon.className = "fa-solid fa-pause";
+        label.innerText = "Pausar";
+      }
+    }
+
+    async function updateDashboard() {
+      try {
+        const res = await fetch('/api/state');
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // Latência
+        if (data.api_latency_ms) {
+          document.getElementById('latencyBadge').innerHTML = `<i class="fa-solid fa-bolt text-amber-400 text-[10px]"></i> ${data.api_latency_ms}ms`;
+        }
+
+        // Estado de Pausa
+        updatePauseUI(data.is_paused || false);
+
+        // 1. Top Metrics
+        document.getElementById('totalEquity').innerText = `R$ ${data.total_equity_brl.toFixed(2)}`;
+        document.getElementById('initialCapital').innerText = `R$ ${data.initial_capital_brl.toFixed(2)}`;
+        document.getElementById('cashBalance').innerText = `R$ ${data.cash_balance_brl.toFixed(2)}`;
+        
+        const profitBrl = data.accumulated_profit_brl || 0;
+        const profitPct = data.profit_pct || 0;
+        document.getElementById('profitBrl').innerText = `${profitBrl >= 0 ? '+' : ''}R$ ${profitBrl.toFixed(2)}`;
+        
+        const pEl = document.getElementById('profitPct');
+        pEl.innerText = `${profitPct >= 0 ? '+' : ''}${profitPct.toFixed(2)}%`;
+        pEl.className = profitPct >= 0 ? "text-[11px] font-bold text-emerald-400 mt-1 mono" : "text-[11px] font-bold text-rose-400 mt-1 mono";
+
+        document.getElementById('winCountBadge').innerText = `${data.win_count || 0} Wins`;
+        document.getElementById('macroStatus').innerHTML = data.last_macro_status || 'Em Análise...';
+        document.getElementById('lastUpdate').innerText = data.last_update || '--';
+
+        // 2. Tabela de Posições Abertas
+        const positions = data.open_positions || [];
+        document.getElementById('openCount').innerText = `${positions.length} ativa${positions.length === 1 ? '' : 's'}`;
+        const pTable = document.getElementById('positionsTable');
+
+        if (positions.length === 0) {
+          pTable.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-slate-400"><i class="fa-solid fa-magnifying-glass text-slate-500 mr-2"></i> Nenhuma posição aberta no momento. O robô está buscando as melhores entradas em velas de 1H.</td></tr>`;
+        } else {
+          pTable.innerHTML = positions.map(pos => {
+            const pnl = pos.current_pnl_pct || 0;
+            const isProfit = pnl >= 0;
+            const pnlClass = isProfit ? 'text-emerald-400 bg-emerald-500/10' : 'text-amber-400 bg-amber-500/10';
+            const curPrice = pos.current_price || pos.entry_price;
+            return `
+              <tr class="hover:bg-slate-800/40 transition">
+                <td class="py-2.5 px-3">
+                  <div class="font-bold text-white text-xs flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    ${pos.symbol}
+                  </div>
+                  <div class="text-[10px] text-slate-400">${pos.name || ''}</div>
+                </td>
+                <td class="py-2.5 px-3 text-slate-400 text-[11px]">${pos.entry_time}</td>
+                <td class="py-2.5 px-3 mono text-slate-300">R$/$ ${pos.entry_price.toFixed(4)}</td>
+                <td class="py-2.5 px-3 mono text-white font-bold">R$/$ ${curPrice.toFixed(4)}</td>
+                <td class="py-2.5 px-3 mono text-emerald-400 font-semibold">R$/$ ${pos.target_price.toFixed(4)} <span class="text-[10px] text-emerald-500">(+2%)</span></td>
+                <td class="py-2.5 px-3">
+                  <span class="px-2 py-0.5 rounded font-mono font-bold text-[11px] ${pnlClass}">
+                    ${isProfit ? '+' : ''}${pnl.toFixed(2)}%
+                  </span>
+                </td>
+                <td class="py-2.5 px-3 mono text-right font-bold text-slate-100">
+                  R$ ${pos.stake_brl.toFixed(2)}
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
+
+        // 3. Histórico de Trades Fechados
+        const closed = data.closed_trades || [];
+        document.getElementById('closedCount').innerText = `${closed.length} finalizada${closed.length === 1 ? '' : 's'}`;
+        const hTable = document.getElementById('historyTable');
+
+        if (closed.length === 0) {
+          hTable.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-slate-400">Ainda não há operações fechadas. As posições estão em andamento.</td></tr>`;
+        } else {
+          hTable.innerHTML = closed.slice(-15).reverse().map(trade => `
+            <tr class="hover:bg-slate-800/40 transition">
+              <td class="py-2 px-2 font-bold text-white">${trade.symbol}</td>
+              <td class="py-2 px-2 text-slate-400 text-[11px]">${trade.exit_time}</td>
+              <td class="py-2 px-2 font-bold text-emerald-400 mono">+${trade.profit_pct}%</td>
+              <td class="py-2 px-2 text-right font-bold text-emerald-400 mono">+R$ ${trade.profit_brl.toFixed(2)}</td>
+            </tr>
+          `).join('');
+        }
+
+        // 4. Logs de Atividade
+        if (data.activity_logs) {
+          const consoleDiv = document.getElementById('logConsole');
+          consoleDiv.innerHTML = data.activity_logs.map(l => {
+            let color = 'text-slate-300';
+            if (l.includes('COMPRA') || l.includes('TAKE PROFIT') || l.includes('concluído')) color = 'text-emerald-300';
+            else if (l.includes('Alerta') || l.includes('Erro')) color = 'text-rose-400';
+            else if (l.includes('PAUSADO')) color = 'text-amber-300';
+            return `<div class="leading-relaxed hover:text-white transition ${color}">${l}</div>`;
+          }).join('');
+        }
+
+      } catch (err) {
+        console.error("Erro ao sincronizar dashboard:", err);
+      }
+    }
+
+    async function triggerScan() {
+      const btn = document.getElementById('btnScan');
+      const icon = document.getElementById('scanIcon');
+      icon.classList.add('fa-spin');
+      btn.disabled = true;
+      try {
+        await fetch('/api/scan', { method: 'POST' });
+        countdown = 60;
+        await updateDashboard();
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setTimeout(() => {
+          icon.classList.remove('fa-spin');
+          btn.disabled = false;
+        }, 1200);
+      }
+    }
+
+    setInterval(updateDashboard, 4000);
+    updateDashboard();
+  </script>
+</body>
+</html>
+"""
+
+@app.route('/')
+def home():
+    return render_template_string(HTML_DASHBOARD)
+
+@app.route('/api/state')
+def get_state():
+    state = engine.state.copy()
+    state["activity_logs"] = activity_logs
+    return jsonify(state)
+
+@app.route('/api/scan', methods=['POST'])
+def manual_scan():
+    try:
+        add_log("Escaneamento manual acionado pelo operador no Dashboard.")
+        engine.run_cycle()
+        return jsonify({"status": "success", "message": "Ciclo executado com sucesso!"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/toggle_pause', methods=['POST'])
+def toggle_pause():
+    is_paused = engine.toggle_pause()
+    msg = "Operações de novas compras PAUSADAS." if is_paused else "Operações de compras RETOMADAS."
+    add_log(msg)
+    return jsonify({"status": "success", "is_paused": is_paused, "message": msg})
+
+@app.route('/api/reset', methods=['POST'])
+def reset_simulation():
+    engine.reset_simulation()
+    add_log("Simulador reiniciado. Banca restaurada para R$ 50,00.")
+    return jsonify({"status": "success", "message": "Simulação restaurada para R$ 50,00."})
+
+@app.route('/health')
+def health():
+    return jsonify({
+        "status": "UP",
+        "service": "BITLUCRO Binance Spot Bot",
+        "time": datetime.now().isoformat(),
+        "total_equity_brl": engine.state.get("total_equity_brl", 50.0),
+        "is_paused": engine.state.get("is_paused", False)
+    })
+
+if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 5000))
+    print(f"🚀 BITLUCRO rodando na porta {port}...")
+    app.run(host='0.0.0.0', port=port, debug=False)
