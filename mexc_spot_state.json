@@ -1,0 +1,26 @@
+{
+  "mode": "MEXC_REAL_SPOT",
+  "initial_usdt": 2.24,
+  "cash_balance_usdt": 0.0557,
+  "total_equity_usdt": 2.25,
+  "accumulated_profit_usdt": 0.0,
+  "profit_pct": 0.0,
+  "wins": 0,
+  "open_position": {
+    "symbol": "SOLUSDT",
+    "entry_price": 121.38,
+    "target_price": 123.8076,
+    "invested_usdt": 2.19,
+    "entry_time": "12:05:01",
+    "current_price": 121.72,
+    "current_pnl_pct": 0.28
+  },
+  "closed_trades": [],
+  "current_thought": "[12:33:32] 🧠 IA Estudando Mercado: Em custódia SOLUSDT (+0.28% PnL | $121.7200 ➔ Alvo $123.8076). BTC $84599 (RSI 39) | ETH $2690 (RSI 31) | Acumulação/Neutro.",
+  "last_update": "27/09/2026 12:33:33",
+  "logs": [
+    "[12:33:33] 🧠 Estudo Mercado IA: BTC $84599 (RSI 39.2) | ETH $2690 (RSI 30.8) | Macro: Acumulação/Neutro.",
+    "[12:33:21] 📈 Custódia SOLUSDT: $121.7700 (+0.32%). Alvo (+2.0%): $123.8076. Faltam +$2.0376.",
+    "[12:33:13] 📈 Custódia SOLUSDT: $121.7700 (+0.32%). Alvo (+2.0%): $123.8076. Faltam +$2.0376."
+  ]
+}

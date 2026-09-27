@@ -1632,10 +1632,11 @@ HTML_DASHBOARD = """
       localStorage.setItem('pwa_dismissed', 'true');
     }
 
-    let currentMode = 'sim';
+    let currentMode = 'mexc';
 
     function switchMode(mode) {
       currentMode = mode;
+      try { localStorage.setItem('bitlucro_mode', mode); } catch (e) {}
       const simView = document.getElementById('simModeView');
       const mexcView = document.getElementById('mexcModeView');
       const btnSim = document.getElementById('tabBtnSim');
@@ -1782,6 +1783,15 @@ HTML_DASHBOARD = """
     setInterval(updateMexcDashboard, 2500);
     updateDashboard();
     updateMexcDashboard();
+
+    // Auto-carregar aba preferida (URL ?tab=mexc ou localStorage ou 'mexc' como padrão)
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const prefMode = urlParams.get('tab') || localStorage.getItem('bitlucro_mode') || 'mexc';
+      switchMode(prefMode);
+    } catch (e) {
+      switchMode('mexc');
+    }
   </script>
 </body>
 </html>
