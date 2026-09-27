@@ -955,7 +955,7 @@ HTML_DASHBOARD = """
       const num = parseFloat(val);
       const isBrl = (symbol || '').toUpperCase().endsWith('BRL');
       const prefix = isBrl ? 'R$ ' : '$ ';
-      if (num >= 1000) {
+      if (num >= 10) {
         return prefix + num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       } else if (num >= 1) {
         return prefix + num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
