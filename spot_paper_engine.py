@@ -406,7 +406,8 @@ class BinanceSpotPaperEngine:
                 matched_tf = "4H"
                 setup_desc = f"Breakout Institucional 4H (Tendência Macro {trend_4h})"
 
-            print(f"   • {sym:<10}: R$/$ {price:<9.2f} | 15m RSI: {rsi_15m:<4.1f} | 1h RSI: {rsi_1h:<4.1f} | 4h: {trend_4h} | Gatilho: {matched_tf or 'Nenhum'}")
+            curr_symbol = "R$" if sym.endswith("BRL") else "$"
+            print(f"   • {sym:<10}: {curr_symbol} {price:<9.2f} | 15m RSI: {rsi_15m:<4.1f} | 1h RSI: {rsi_1h:<4.1f} | 4h: {trend_4h} | Gatilho: {matched_tf or 'Nenhum'}")
 
             if matched_tf:
                 if not has_cash_to_buy:

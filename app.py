@@ -10,6 +10,7 @@ import json
 import time
 import threading
 from datetime import datetime
+import requests
 from flask import Flask, jsonify, render_template_string, request, Response
 
 # Configuração de encoding para UTF-8 seguro
@@ -89,8 +90,19 @@ HTML_DASHBOARD = """
 <html lang="pt-BR" class="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>BITLUCRO | Binance Spot Bot 24/7</title>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0B0E14">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="BITLUCRO">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5968/5968260.png">
+  <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/5968/5968260.png">
+
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script>
@@ -124,91 +136,121 @@ HTML_DASHBOARD = """
     .custom-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
     .custom-scroll::-webkit-scrollbar-track { background: #0e121a; }
     .custom-scroll::-webkit-scrollbar-thumb { background: #232c3f; border-radius: 4px; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    button, a { -webkit-tap-highlight-color: transparent; }
   </style>
 </head>
 <body class="text-slate-100 min-h-screen flex flex-col justify-between antialiased selection:bg-amber-500/30 selection:text-amber-300">
 
   <!-- ==========================================
+       BANNER PWA: INSTALAR NO CELULAR
+       ========================================== -->
+  <div id="pwaInstallBanner" class="bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-blue-500/20 border-b border-amber-500/30 px-3 py-2 text-xs flex items-center justify-between hidden transition-all sticky top-0 z-50 backdrop-blur-md">
+    <div class="flex items-center space-x-2.5">
+      <div class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center text-sm font-bold shrink-0">
+        <i class="fa-solid fa-mobile-screen-button"></i>
+      </div>
+      <div>
+        <span class="font-bold text-white">Instalar BITLUCRO no Celular</span>
+        <span class="text-slate-400 hidden sm:inline"> — Use como app nativo em tela cheia na sua tela inicial</span>
+      </div>
+    </div>
+    <div class="flex items-center space-x-2 shrink-0">
+      <button onclick="installPWA()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-3 py-1 rounded-lg text-xs transition shadow flex items-center gap-1.5">
+        <i class="fa-solid fa-download"></i> <span>Instalar App</span>
+      </button>
+      <button onclick="dismissPWABanner()" class="text-slate-400 hover:text-white p-1 text-sm" title="Fechar">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- ==========================================
        HEURÍSTICA #1 & #4: CABEÇALHO COM VISIBILIDADE DO STATUS
        ========================================== -->
-  <header class="border-b border-slate-800/80 bg-cardbg/80 backdrop-blur-md sticky top-0 z-40 px-4 py-3">
-    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+  <header class="border-b border-slate-800/80 bg-cardbg/80 backdrop-blur-md sticky top-0 z-40 px-3 sm:px-4 py-2.5 sm:py-3">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-2.5">
       
-      <!-- Logo e Identificação -->
-      <div class="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-start">
-        <div class="flex items-center space-x-3">
-          <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 font-extrabold text-xl shadow-lg">
+      <!-- Topo: Logo + Botão App Mobile + Botão Ajuda -->
+      <div class="flex items-center justify-between w-full md:w-auto">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 font-extrabold text-lg shadow-lg">
             <i class="fa-brands fa-bitcoin"></i>
           </div>
           <div>
             <div class="flex items-center space-x-2">
-              <h1 class="text-lg font-black tracking-tight text-white flex items-center gap-1.5">
-                BITLUCRO <span class="text-amber-400 text-xs px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 font-bold">SPOT PRO</span>
+              <h1 class="text-base sm:text-lg font-black tracking-tight text-white flex items-center gap-1.5 leading-tight">
+                BITLUCRO <span class="text-amber-400 text-[10px] sm:text-xs px-1.5 py-0.2 rounded bg-amber-500/10 border border-amber-500/20 font-bold">SPOT PRO</span>
               </h1>
             </div>
-            <p class="text-[11px] text-slate-400">Algoritmo Quantitativo 24/7 | Proteção Sem Liquidação</p>
+            <p class="text-[10px] sm:text-[11px] text-slate-400 leading-tight">Algoritmo Quantitativo 24/7 | Proteção Sem Liquidação</p>
           </div>
         </div>
 
-        <!-- Botão Ajuda / Heurística #10 -->
-        <button onclick="toggleHelpModal(true)" class="sm:hidden text-slate-400 hover:text-white p-2 text-sm" title="Guia do Investidor">
-          <i class="fa-solid fa-circle-question"></i>
-        </button>
+        <div class="flex items-center space-x-1.5 md:hidden">
+          <button onclick="installPWA()" class="text-amber-400 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1" title="Instalar no Celular">
+            <i class="fa-solid fa-mobile-screen"></i> <span>App</span>
+          </button>
+          <button onclick="toggleHelpModal(true)" class="text-slate-400 hover:text-white p-1.5 text-sm" title="Guia do Investidor">
+            <i class="fa-solid fa-circle-question"></i>
+          </button>
+        </div>
       </div>
 
-      <!-- Barra de Status do Sistema & Controles Rápidos -->
-      <div class="flex items-center space-x-2.5 w-full sm:w-auto justify-end flex-wrap gap-y-2">
+      <!-- Barra de Status do Sistema & Controles Rápidos (com swipe horizontal suave no mobile) -->
+      <div class="flex items-center space-x-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 no-scrollbar shrink-0">
         
         <!-- Status da API Binance (Heurística #1) -->
-        <div class="flex items-center space-x-2 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg text-xs" title="Status da Conexão com Binance Spot">
+        <div class="flex items-center space-x-2 bg-slate-900 border border-slate-800 px-2.5 py-1.5 rounded-lg text-xs shrink-0" title="Status da Conexão com Binance Spot">
           <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 pulse-dot" id="statusDot"></span>
           <span class="font-bold text-emerald-400 uppercase tracking-wider text-[11px]" id="statusText">ONLINE 24H</span>
           <span class="text-slate-500">|</span>
           <span class="mono text-slate-400 text-[11px]" id="latencyBadge"><i class="fa-solid fa-bolt text-amber-400 text-[10px]"></i> 54ms</span>
-          <span class="text-slate-500 hidden md:inline">|</span>
-          <span class="text-amber-400 font-bold text-[11px] hidden md:flex items-center gap-1" id="pairsCountBadge" title="Varredura de todo o mercado Binance">
+          <span class="text-slate-500 hidden lg:inline">|</span>
+          <span class="text-amber-400 font-bold text-[11px] hidden lg:flex items-center gap-1" id="pairsCountBadge" title="Varredura de todo o mercado Binance">
             <i class="fa-solid fa-globe text-amber-400 text-[10px]"></i> <span id="pairsCountText">3.716 Pares</span>
           </span>
         </div>
 
-        <!-- Botão Pausar / Retomar (Heurística #3: Liberdade e Controle) -->
-        <button onclick="togglePause()" id="btnPause" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition">
+        <!-- Botão Pausar / Retomar -->
+        <button onclick="togglePause()" id="btnPause" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition shrink-0">
           <i class="fa-solid fa-pause" id="pauseIcon"></i>
           <span id="pauseLabel">Pausar</span>
         </button>
 
         <!-- Botão Escanear Agora -->
-        <button onclick="triggerScan()" id="btnScan" class="text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition shadow">
+        <button onclick="triggerScan()" id="btnScan" class="text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition shadow shrink-0">
           <i class="fa-solid fa-arrows-rotate" id="scanIcon"></i>
           <span>Escanear</span>
         </button>
 
         <!-- Botão Super Skill (Aprendizado Contínuo) -->
-        <button onclick="toggleSkillModal(true)" class="text-xs bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold px-2.5 py-1.5 rounded-lg flex items-center space-x-1.5 transition" title="Super Skill & Caderno de Inteligência">
+        <button onclick="toggleSkillModal(true)" class="text-xs bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold px-2.5 py-1.5 rounded-lg flex items-center space-x-1.5 transition shrink-0" title="Super Skill & Caderno de Inteligência">
           <i class="fa-solid fa-brain text-purple-400"></i>
-          <span id="skillBadge">Super Skill (Nv. 1)</span>
+          <span id="skillBadge">Super Skill</span>
         </button>
 
-        <!-- Botão Histórico 500H (Backtest Autônomo) -->
-        <button onclick="toggleHistoryModal(true)" class="text-xs bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 border border-blue-500/30 font-bold px-2.5 py-1.5 rounded-lg flex items-center space-x-1.5 transition" title="Inteligência Histórica dos Últimos 21 Dias">
+        <!-- Botão Histórico 500H -->
+        <button onclick="toggleHistoryModal(true)" class="text-xs bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 border border-blue-500/30 font-bold px-2.5 py-1.5 rounded-lg flex items-center space-x-1.5 transition shrink-0" title="Inteligência Histórica dos Últimos 21 Dias">
           <i class="fa-solid fa-chart-line text-blue-400"></i>
           <span>Histórico 500H</span>
         </button>
 
         <!-- Botão Modelos IA (Contingência) -->
-        <button onclick="toggleAiModal(true)" class="text-xs bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold px-2.5 py-1.5 rounded-lg flex items-center space-x-1.5 transition" title="Modelos de IA & Contingência 24/7">
+        <button onclick="toggleAiModal(true)" class="text-xs bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold px-2.5 py-1.5 rounded-lg flex items-center space-x-1.5 transition shrink-0" title="Modelos de IA & Contingência 24/7">
           <i class="fa-solid fa-server text-purple-400"></i>
           <span>Modelos IA</span>
         </button>
 
         <!-- Botão Baixar Excel -->
-        <a href="/api/export/excel" download class="text-xs bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 font-bold px-2.5 py-1.5 rounded-lg flex items-center space-x-1.5 transition shadow" title="Baixar Dados em Excel (CSV)">
+        <a href="/api/export/excel" download class="text-xs bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 font-bold px-2.5 py-1.5 rounded-lg flex items-center space-x-1.5 transition shadow shrink-0" title="Baixar Dados em Excel (CSV)">
           <i class="fa-solid fa-file-excel text-emerald-400"></i>
-          <span>Baixar Excel</span>
+          <span>Excel</span>
         </a>
 
-        <!-- Botão Guia / FAQ (Heurística #10) -->
-        <button onclick="toggleHelpModal(true)" class="hidden sm:flex text-xs bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/80 font-semibold px-2.5 py-1.5 rounded-lg items-center space-x-1 transition" title="Guia e Princípios de Operação">
+        <!-- Botão Guia / FAQ (Desktop) -->
+        <button onclick="toggleHelpModal(true)" class="hidden md:flex text-xs bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/80 font-semibold px-2.5 py-1.5 rounded-lg items-center space-x-1 transition shrink-0" title="Guia e Princípios de Operação">
           <i class="fa-solid fa-circle-question text-amber-400"></i>
           <span>Guia</span>
         </button>
@@ -389,12 +431,12 @@ HTML_DASHBOARD = """
     </div>
 
     <!-- Tabela de Posições Abertas (Custódia Spot) -->
-    <div class="bg-cardbg border border-bordercol rounded-xl p-4 shadow-sm">
-      <div class="flex items-center justify-between mb-3.5">
+    <div class="bg-cardbg border border-bordercol rounded-xl p-3 sm:p-4 shadow-sm">
+      <div class="flex items-center justify-between mb-3">
         <div class="flex items-center space-x-2">
           <i class="fa-solid fa-layer-group text-amber-400"></i>
-          <h2 class="text-sm font-bold text-white tracking-wide">Ativos em Custódia Spot (Posições Abertas)</h2>
-          <span class="inline-flex items-center gap-1.5 text-[10px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold ml-1.5 shadow-sm" title="Preços e porcentagens atualizados a cada 1 segundo direto da Binance">
+          <h2 class="text-xs sm:text-sm font-bold text-white tracking-wide">Ativos em Custódia Spot (Posições Abertas)</h2>
+          <span class="inline-flex items-center gap-1 text-[9px] sm:text-[10px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold ml-1 shadow-sm" title="Preços e porcentagens atualizados a cada 1 segundo direto da Binance">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> TEMPO REAL (1s)
           </span>
         </div>
@@ -403,7 +445,8 @@ HTML_DASHBOARD = """
         </div>
       </div>
 
-      <div class="overflow-x-auto custom-scroll">
+      <!-- VISÃO DESKTOP: TABELA (oculta em telas menores que 768px) -->
+      <div class="hidden md:block overflow-x-auto custom-scroll">
         <table class="w-full text-left text-xs min-w-[700px]">
           <thead>
             <tr class="border-b border-bordercol text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
@@ -426,6 +469,13 @@ HTML_DASHBOARD = """
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- VISÃO MOBILE: CARDS TOUCH-FRIENDLY (visível apenas em celulares < 768px) -->
+      <div id="mobilePositionsCards" class="md:hidden space-y-2.5">
+        <div class="py-6 text-center text-slate-400 bg-darkbg/50 rounded-xl border border-dashed border-slate-800">
+          <i class="fa-solid fa-spinner fa-spin text-amber-400 mr-2"></i> Carregando carteira de ativos...
+        </div>
       </div>
     </div>
 
@@ -898,6 +948,18 @@ HTML_DASHBOARD = """
         icon.className = "fa-solid fa-pause";
         label.innerText = "Pausar";
       }
+    function formatPrice(val, symbol) {
+      if (val === undefined || val === null || isNaN(val)) return '--';
+      const num = parseFloat(val);
+      const isBrl = (symbol || '').toUpperCase().endsWith('BRL');
+      const prefix = isBrl ? 'R$ ' : '$ ';
+      if (num >= 1000) {
+        return prefix + num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      } else if (num >= 1) {
+        return prefix + num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+      } else {
+        return prefix + num.toLocaleString('pt-BR', { minimumFractionDigits: 4, maximumFractionDigits: 6 });
+      }
     }
 
     async function updateDashboard() {
@@ -957,46 +1019,115 @@ HTML_DASHBOARD = """
         window.currentPositions = positions;
         document.getElementById('openCount').innerText = `${positions.length} ativa${positions.length === 1 ? '' : 's'}`;
         const pTable = document.getElementById('positionsTable');
+        const mCards = document.getElementById('mobilePositionsCards');
 
         if (positions.length === 0) {
-          pTable.innerHTML = `<tr><td colspan="9" class="py-6 text-center text-slate-400"><i class="fa-solid fa-magnifying-glass text-slate-500 mr-2"></i> Nenhuma posição aberta no momento. O robô está rastreando oportunidades em 15M, 1H e 4H.</td></tr>`;
+          if (pTable) pTable.innerHTML = `<tr><td colspan="9" class="py-6 text-center text-slate-400"><i class="fa-solid fa-magnifying-glass text-slate-500 mr-2"></i> Nenhuma posição aberta no momento. O robô está rastreando oportunidades em 15M, 1H e 4H.</td></tr>`;
+          if (mCards) mCards.innerHTML = `
+            <div class="p-6 text-center text-slate-400 bg-darkbg/60 rounded-xl border border-dashed border-slate-800">
+              <i class="fa-solid fa-magnifying-glass text-slate-500 text-lg mb-2"></i>
+              <p class="text-xs font-semibold text-slate-300">Nenhuma posição aberta no momento</p>
+              <p class="text-[11px] text-slate-500 mt-1">O robô está rastreando oportunidades em 15M, 1H e 4H.</p>
+            </div>
+          `;
         } else {
-          pTable.innerHTML = positions.map(pos => {
-            const pnl = pos.current_pnl_pct || 0;
-            const isProfit = pnl >= 0;
-            const pnlClass = isProfit ? 'text-emerald-400 bg-emerald-500/10' : 'text-amber-400 bg-amber-500/10';
-            const curPrice = pos.current_price || pos.entry_price;
-            const tf = pos.timeframe || '1H';
-            const tfBadge = tf === '15m' ? '<span class="bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded font-bold text-[10px]">15m</span>' : (tf === '4H' ? '<span class="bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded font-bold text-[10px]">4H</span>' : '<span class="bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded font-bold text-[10px]">1H</span>');
-            const feeBrl = pos.buy_fee_brl || (pos.stake_brl * 0.0015);
+          // Render Desktop Table
+          if (pTable) {
+            pTable.innerHTML = positions.map(pos => {
+              const pnl = pos.current_pnl_pct || 0;
+              const isProfit = pnl >= 0;
+              const pnlClass = isProfit ? 'text-emerald-400 bg-emerald-500/10' : 'text-amber-400 bg-amber-500/10';
+              const curPrice = pos.current_price || pos.entry_price;
+              const tf = pos.timeframe || '1H';
+              const tfBadge = tf === '15m' ? '<span class="bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded font-bold text-[10px]">15m</span>' : (tf === '4H' ? '<span class="bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded font-bold text-[10px]">4H</span>' : '<span class="bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded font-bold text-[10px]">1H</span>');
+              const feeBrl = pos.buy_fee_brl || (pos.stake_brl * 0.0015);
 
-            return `
-              <tr class="hover:bg-slate-800/40 transition">
-                <td class="py-2.5 px-3">${tfBadge}</td>
-                <td class="py-2.5 px-3">
-                  <div class="font-bold text-white text-xs flex items-center gap-1.5">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                    ${pos.symbol}
-                    ${pos.ml_score ? `<span class="bg-purple-500/20 text-purple-300 font-mono text-[9px] px-1 rounded font-bold" title="Score Machine Learning">ML ${pos.ml_score}%</span>` : ''}
+              return `
+                <tr class="hover:bg-slate-800/40 transition">
+                  <td class="py-2.5 px-3">${tfBadge}</td>
+                  <td class="py-2.5 px-3">
+                    <div class="font-bold text-white text-xs flex items-center gap-1.5">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                      ${pos.symbol}
+                      ${pos.ml_score ? `<span class="bg-purple-500/20 text-purple-300 font-mono text-[9px] px-1 rounded font-bold" title="Score Machine Learning">ML ${pos.ml_score}%</span>` : ''}
+                    </div>
+                    <div class="text-[10px] text-slate-400">${pos.name || ''}</div>
+                  </td>
+                  <td class="py-2.5 px-3 text-slate-400 text-[11px]">${pos.entry_time}</td>
+                  <td class="py-2.5 px-3 mono text-slate-300">${formatPrice(pos.entry_price, pos.symbol)}</td>
+                  <td class="py-2.5 px-3 mono text-white font-bold transition-colors duration-300" id="livePrice_${pos.symbol}">${formatPrice(curPrice, pos.symbol)}</td>
+                  <td class="py-2.5 px-3 mono text-emerald-400 font-semibold">${formatPrice(pos.target_price, pos.symbol)} <span class="text-[10px] text-emerald-500">(+2%)</span></td>
+                  <td class="py-2.5 px-3">
+                    <span id="livePnl_${pos.symbol}" class="px-2 py-0.5 rounded font-mono font-bold text-[11px] transition-all duration-300 ${pnlClass}">
+                      ${isProfit ? '+' : ''}${pnl.toFixed(2)}%
+                    </span>
+                  </td>
+                  <td class="py-2.5 px-3 mono text-slate-400 text-[11px]">R$ ${feeBrl.toFixed(3)}</td>
+                  <td class="py-2.5 px-3 mono text-right font-bold text-slate-100">
+                    R$ ${pos.stake_brl.toFixed(2)}
+                  </td>
+                </tr>
+              `;
+            }).join('');
+          }
+
+          // Render Mobile Cards
+          if (mCards) {
+            mCards.innerHTML = positions.map(pos => {
+              const pnl = pos.current_pnl_pct || 0;
+              const isProfit = pnl >= 0;
+              const pnlClass = isProfit ? 'text-emerald-400 bg-emerald-500/15 border border-emerald-500/30' : 'text-amber-400 bg-amber-500/15 border border-amber-500/30';
+              const curPrice = pos.current_price || pos.entry_price;
+              const tf = pos.timeframe || '1H';
+              const tfBadge = tf === '15m' ? '<span class="bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded font-bold text-[10px]">15m</span>' : (tf === '4H' ? '<span class="bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded font-bold text-[10px]">4H</span>' : '<span class="bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded font-bold text-[10px]">1H</span>');
+              const feeBrl = pos.buy_fee_brl || (pos.stake_brl * 0.0015);
+
+              return `
+                <div class="bg-darkbg/90 border border-slate-800 rounded-xl p-3 space-y-2.5 shadow-md">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-1.5">
+                      <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                      <span class="font-extrabold text-white text-sm tracking-wide">${pos.symbol}</span>
+                      ${tfBadge}
+                      ${pos.ml_score ? `<span class="bg-purple-500/20 text-purple-300 font-mono text-[9px] px-1.5 py-0.5 rounded font-bold border border-purple-500/30">ML ${pos.ml_score}%</span>` : ''}
+                    </div>
+                    <span id="livePnlMob_${pos.symbol}" class="px-2.5 py-1 rounded-lg font-mono font-black text-xs ${pnlClass} shadow-sm">
+                      ${isProfit ? '+' : ''}${pnl.toFixed(2)}%
+                    </span>
                   </div>
-                  <div class="text-[10px] text-slate-400">${pos.name || ''}</div>
-                </td>
-                <td class="py-2.5 px-3 text-slate-400 text-[11px]">${pos.entry_time}</td>
-                <td class="py-2.5 px-3 mono text-slate-300">R$/$ ${pos.entry_price.toFixed(4)}</td>
-                <td class="py-2.5 px-3 mono text-white font-bold transition-colors duration-300" id="livePrice_${pos.symbol}">R$/$ ${curPrice.toFixed(4)}</td>
-                <td class="py-2.5 px-3 mono text-emerald-400 font-semibold">R$/$ ${pos.target_price.toFixed(4)} <span class="text-[10px] text-emerald-500">(+2%)</span></td>
-                <td class="py-2.5 px-3">
-                  <span id="livePnl_${pos.symbol}" class="px-2 py-0.5 rounded font-mono font-bold text-[11px] transition-all duration-300 ${pnlClass}">
-                    ${isProfit ? '+' : ''}${pnl.toFixed(2)}%
-                  </span>
-                </td>
-                <td class="py-2.5 px-3 mono text-slate-400 text-[11px]">R$ ${feeBrl.toFixed(3)}</td>
-                <td class="py-2.5 px-3 mono text-right font-bold text-slate-100">
-                  R$ ${pos.stake_brl.toFixed(2)}
-                </td>
-              </tr>
-            `;
-          }).join('');
+
+                  <div class="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-slate-800/80">
+                    <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800/90">
+                      <div class="text-[10px] text-slate-400 font-medium">Preço Compra</div>
+                      <div class="font-mono text-slate-200 font-semibold mt-0.5 text-[11px]">${formatPrice(pos.entry_price, pos.symbol)}</div>
+                    </div>
+                    <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800/90">
+                      <div class="text-[10px] text-slate-400 font-medium flex items-center justify-between">
+                        <span>Cotação (1s)</span>
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                      </div>
+                      <div class="font-mono text-white font-black mt-0.5 text-[11px]" id="livePriceMob_${pos.symbol}">${formatPrice(curPrice, pos.symbol)}</div>
+                    </div>
+                    <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800/90">
+                      <div class="text-[10px] text-slate-400 font-medium">Alvo Lucro (+2%)</div>
+                      <div class="font-mono text-emerald-400 font-bold mt-0.5 text-[11px]">${formatPrice(pos.target_price, pos.symbol)}</div>
+                    </div>
+                    <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800/90">
+                      <div class="text-[10px] text-slate-400 font-medium">Investido / Taxa</div>
+                      <div class="font-mono text-slate-200 mt-0.5 font-semibold text-[11px]">R$ ${pos.stake_brl.toFixed(2)} <span class="text-[10px] text-slate-500">(${feeBrl.toFixed(2)})</span></div>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center justify-between text-[10px] text-slate-400 pt-0.5">
+                    <span>Entrada: <b class="text-slate-300 font-mono">${pos.entry_time}</b></span>
+                    <span class="text-emerald-400 font-semibold flex items-center gap-1">
+                      <i class="fa-solid fa-shield-halved text-[9px]"></i> Spot 100% Protegido
+                    </span>
+                  </div>
+                </div>
+              `;
+            }).join('');
+          }
         }
 
         // 4. Histórico de Trades Fechados
@@ -1097,8 +1228,8 @@ HTML_DASHBOARD = """
                     ${item.historical_win_rate_pct}% <span class="text-[10px] text-slate-400">(${item.wins_count}/${item.signals_tested})</span>
                   </td>
                   <td class="py-2.5 px-3 mono text-slate-300">~${item.avg_hours_to_tp}h</td>
-                  <td class="py-2.5 px-3 mono text-slate-300">R$/$ ${item.support_price}</td>
-                  <td class="py-2.5 px-3 mono text-slate-300">R$/$ ${item.resistance_price}</td>
+                  <td class="py-2.5 px-3 mono text-slate-300">${formatPrice(item.support_price, k)}</td>
+                  <td class="py-2.5 px-3 mono text-slate-300">${formatPrice(item.resistance_price, k)}</td>
                   <td class="py-2.5 px-3 text-right">
                     <div class="flex items-center justify-end gap-1.5">
                       <span class="mono text-[11px] text-slate-300 font-bold">${pos}%</span>
@@ -1170,11 +1301,19 @@ HTML_DASHBOARD = """
           const pnl = ((curPrice - entryPrice) / entryPrice) * 100;
           const isProfit = pnl >= 0;
           
+          const formatted = formatPrice(curPrice, sym);
+          const pnlText = `${isProfit ? '+' : ''}${pnl.toFixed(2)}%`;
+          
+          // Desktop elements
           const priceEl = document.getElementById(`livePrice_${sym}`);
           const pnlEl = document.getElementById(`livePnl_${sym}`);
           
+          // Mobile elements
+          const priceMobEl = document.getElementById(`livePriceMob_${sym}`);
+          const pnlMobEl = document.getElementById(`livePnlMob_${sym}`);
+          
           if (priceEl) {
-            priceEl.innerText = `R$/$ ${curPrice.toFixed(4)}`;
+            priceEl.innerText = formatted;
             if (curPrice > previousPrices[sym]) {
               priceEl.classList.add('text-emerald-400');
               setTimeout(() => priceEl.classList.remove('text-emerald-400'), 450);
@@ -1183,15 +1322,84 @@ HTML_DASHBOARD = """
               setTimeout(() => priceEl.classList.remove('text-rose-400'), 450);
             }
           }
+
+          if (priceMobEl) {
+            priceMobEl.innerText = formatted;
+            if (curPrice > previousPrices[sym]) {
+              priceMobEl.classList.add('text-emerald-400');
+              setTimeout(() => priceMobEl.classList.remove('text-emerald-400'), 450);
+            } else if (curPrice < previousPrices[sym]) {
+              priceMobEl.classList.add('text-rose-400');
+              setTimeout(() => priceMobEl.classList.remove('text-rose-400'), 450);
+            }
+          }
           
           if (pnlEl) {
-            pnlEl.innerText = `${isProfit ? '+' : ''}${pnl.toFixed(2)}%`;
+            pnlEl.innerText = pnlText;
             pnlEl.className = `px-2 py-0.5 rounded font-mono font-bold text-[11px] transition-all duration-300 ${isProfit ? 'text-emerald-400 bg-emerald-500/10' : 'text-amber-400 bg-amber-500/10'}`;
+          }
+
+          if (pnlMobEl) {
+            pnlMobEl.innerText = pnlText;
+            pnlMobEl.className = `px-2.5 py-1 rounded-lg font-mono font-black text-xs transition-all duration-300 ${isProfit ? 'text-emerald-400 bg-emerald-500/15 border border-emerald-500/30' : 'text-amber-400 bg-amber-500/15 border border-amber-500/30'}`;
           }
         });
       } catch (err) {
         // Silencioso em caso de falha transitória
       }
+    }
+
+    // ==========================================
+    // PWA (PROGRESSIVE WEB APP) & REGISTRO SERVICE WORKER
+    // ==========================================
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW fail:', err));
+      });
+    }
+
+    let deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      const banner = document.getElementById('pwaInstallBanner');
+      if (banner && !localStorage.getItem('pwa_dismissed')) {
+        banner.classList.remove('hidden');
+      }
+    });
+
+    // Se estiver em mobile e não tiver dispensado, mostra banner de sugestão após 2.5s
+    setTimeout(() => {
+      const banner = document.getElementById('pwaInstallBanner');
+      if (banner && !localStorage.getItem('pwa_dismissed') && window.innerWidth < 768) {
+        banner.classList.remove('hidden');
+      }
+    }, 2500);
+
+    function installPWA() {
+      const isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (isIos) {
+        alert("📲 Como Instalar o BITLUCRO no iPhone (Safari):\n\n1. Toque no botão 'Compartilhar' (ícone de quadrado com seta para cima na barra inferior do Safari).\n2. Role para baixo e selecione 'Adicionar à Tela de Início'.\n3. Toque em 'Adicionar' no canto superior direito.\n\nPronto! O ícone do BITLUCRO aparecerá na tela inicial como um app nativo.");
+        return;
+      }
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            const banner = document.getElementById('pwaInstallBanner');
+            if (banner) banner.classList.add('hidden');
+          }
+          deferredPrompt = null;
+        });
+      } else {
+        alert("📲 Instalar no Celular:\n\nToque no menu (três pontinhos) do seu navegador e escolha 'Instalar aplicativo' ou 'Adicionar à tela inicial'.");
+      }
+    }
+
+    function dismissPWABanner() {
+      const banner = document.getElementById('pwaInstallBanner');
+      if (banner) banner.classList.add('hidden');
+      localStorage.setItem('pwa_dismissed', 'true');
     }
 
     setInterval(updateDashboard, 4000);
@@ -1277,6 +1485,50 @@ def health():
         "total_equity_brl": engine.state.get("total_equity_brl", 50.0),
         "is_paused": engine.state.get("is_paused", False)
     })
+
+@app.route('/manifest.json')
+def pwa_manifest():
+    manifest_data = {
+        "name": "BITLUCRO - Robô Spot 24/7",
+        "short_name": "BITLUCRO",
+        "description": "Dashboard do Robô Quantitativo Binance Spot 24/7",
+        "start_url": "/",
+        "display": "standalone",
+        "background_color": "#0B0E14",
+        "theme_color": "#0B0E14",
+        "orientation": "portrait-primary",
+        "icons": [
+            {
+                "src": "https://cdn-icons-png.flaticon.com/512/5968/5968260.png",
+                "sizes": "192x192",
+                "type": "image/png",
+                "purpose": "any maskable"
+            },
+            {
+                "src": "https://cdn-icons-png.flaticon.com/512/5968/5968260.png",
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "any maskable"
+            }
+        ]
+    }
+    return jsonify(manifest_data)
+
+@app.route('/sw.js')
+def service_worker():
+    sw_code = """
+    const CACHE_NAME = 'bitlucro-pwa-v1';
+    self.addEventListener('install', (e) => {
+        self.skipWaiting();
+    });
+    self.addEventListener('activate', (e) => {
+        e.waitUntil(clients.claim());
+    });
+    self.addEventListener('fetch', (e) => {
+        e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+    });
+    """
+    return Response(sw_code, mimetype="application/javascript")
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
