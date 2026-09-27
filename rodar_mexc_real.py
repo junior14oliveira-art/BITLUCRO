@@ -199,28 +199,101 @@ class MEXCTrader:
             return {"success": False, "error": str(e)}
 
     def execute_market_sell(self, symbol, base_asset, quantity):
-        """Vende a mercado toda a quantidade do ativo base."""
-        try:
-            info = requests.get(f"{MEXC_API}/exchangeInfo?symbol={symbol}", timeout=4).json()
-            prec = 2
-            if "symbols" in info and len(info["symbols"]) > 0:
-                prec = int(info["symbols"][0].get("baseAssetPrecision", 2))
+        """Vende a mercado toda a quantidade do ativo base com truncamento seguro e retry."""
+        import math
 
-            qty_str = f"{quantity:.{prec}f}"
-            params = {
-                "symbol": symbol,
-                "side": "SELL",
-                "type": "MARKET",
-                "quantity": qty_str,
-                "timestamp": int(time.time() * 1000)
+        # Mapeamento seguro de precisão padrão para caso a chamada de exchangeInfo falhe
+        default_prec = {
+            "SOLUSDT": 3,
+            "BTCUSDT": 5,
+            "ETHUSDT": 4,
+            "DOGEUSDT": 0,
+            "XRPUSDT": 1,
+            "NEARUSDT": 2,
+            "SUIUSDT": 1,
+            "AVAXUSDT": 2,
+            "LINKUSDT": 2
+        }.get(symbol, 3)
+
+        prec = default_prec
+        try:
+            info = requests.get(f"{MEXC_API}/exchangeInfo?symbol={symbol}", timeout=3).json()
+            if "symbols" in info and len(info["symbols"]) > 0:
+                prec = int(info["symbols"][0].get("baseAssetPrecision", default_prec))
+        except Exception:
+            pass
+
+        # Trunca para garantir que NUNCA ultrapasse a quantidade disponível em carteira
+        factor = 10 ** prec
+        safe_qty = math.floor(float(quantity) * factor) / factor
+        qty_str = f"{safe_qty:.{prec}f}"
+
+        # Tenta enviar a ordem até 3 vezes
+        last_error = ""
+        for attempt in range(1, 4):
+            try:
+                params = {
+                    "symbol": symbol,
+                    "side": "SELL",
+                    "type": "MARKET",
+                    "quantity": qty_str,
+                    "timestamp": int(time.time() * 1000)
+                }
+                signed = self._sign(params)
+                r = requests.post(f"{MEXC_API}/order?{signed}", headers=self._headers(), timeout=5)
+                if r.status_code == 200:
+                    return {"success": True, "data": r.json()}
+                last_error = r.text
+            except Exception as e:
+                last_error = str(e)
+            time.sleep(1)
+
+        return {"success": False, "error": last_error}
+
+    def manual_market_sell(self):
+        """Permite forçar a venda a mercado imediata pelo painel."""
+        pos = self.state.get("open_position")
+        if not pos:
+            return {"success": False, "error": "Nenhuma posição aberta na MEXC."}
+
+        sym = pos["symbol"]
+        base_asset = sym.replace("USDT", "")
+        qty = self.get_asset_balance(base_asset)
+        if qty <= 0.0001:
+            return {"success": False, "error": f"Saldo de {base_asset} zerado ou insuficiente na MEXC."}
+
+        res = self.execute_market_sell(sym, base_asset, qty)
+        if res.get("success"):
+            cur_p = self.get_live_price(sym) or pos.get("entry_price", 0.0)
+            entry_p = pos.get("entry_price", cur_p)
+            pnl = ((cur_p - entry_p) / entry_p) * 100
+            new_usdt = self.get_usdt_balance()
+            profit_usdt = new_usdt - pos.get("invested_usdt", 0.0)
+            now_str = datetime.now().strftime("%H:%M:%S")
+
+            self.state["accumulated_profit_usdt"] = round(self.state.get("accumulated_profit_usdt", 0.0) + max(0.0, profit_usdt), 4)
+            if profit_usdt > 0:
+                self.state["wins"] = self.state.get("wins", 0) + 1
+            self.state["cash_balance_usdt"] = new_usdt
+            self.state["total_equity_usdt"] = new_usdt
+            tot_prof = self.state["total_equity_usdt"] - self.state.get("initial_usdt", 2.24)
+            self.state["profit_pct"] = round((tot_prof / self.state.get("initial_usdt", 2.24)) * 100, 2)
+
+            trade_rec = {
+                "symbol": sym,
+                "entry": entry_p,
+                "exit": cur_p,
+                "pnl_pct": round(pnl, 2),
+                "profit_usdt": round(profit_usdt, 4),
+                "time": now_str
             }
-            signed = self._sign(params)
-            r = requests.post(f"{MEXC_API}/order?{signed}", headers=self._headers(), timeout=5)
-            if r.status_code == 200:
-                return {"success": True, "data": r.json()}
-            return {"success": False, "error": r.text}
-        except Exception as e:
-            return {"success": False, "error": str(e)}
+            self.state.setdefault("closed_trades", []).append(trade_rec)
+            self.state["open_position"] = None
+            self.state["current_thought"] = f"[{now_str}] ⚡ Venda a mercado manual executada: {sym} a ${cur_p:.4f} ({pnl:+.2f}% | Lucro: +${profit_usdt:.4f} USDT). Saldo livre: ${new_usdt:.2f} USDT."
+            self.add_log(f"⚡ Venda Manual MEXC: {sym} liquidado a ${cur_p:.4f} ({pnl:+.2f}%). Saldo: ${new_usdt:.2f} USDT.")
+            self.save_state()
+            return {"success": True, "profit_usdt": profit_usdt, "pnl_pct": pnl}
+        return res
 
     def step(self):
         """Executa um ciclo único do robô MEXC Real com auto-reconciliação e logs ativos."""

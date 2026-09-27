@@ -263,6 +263,23 @@ class BinanceSpotPaperEngine:
                             break
                     except Exception:
                         continue
+
+        # Fallback instantâneo via MEXC se a Binance bloquear ou demorar
+        for sym in symbols:
+            if sym not in prices:
+                try:
+                    if sym.endswith("BRL"):
+                        base_sym = sym.replace("BRL", "USDT")
+                        r_m = requests.get(f"https://api.mexc.com/api/v3/ticker/price?symbol={base_sym}", timeout=2).json()
+                        usdt_brl = self.get_usdt_brl_rate()
+                        if "price" in r_m:
+                            prices[sym] = round(float(r_m["price"]) * usdt_brl, 2)
+                    else:
+                        r_m = requests.get(f"https://api.mexc.com/api/v3/ticker/price?symbol={sym}", timeout=2).json()
+                        if "price" in r_m:
+                            prices[sym] = float(r_m["price"])
+                except Exception:
+                    pass
         return prices
 
     def update_open_positions(self):

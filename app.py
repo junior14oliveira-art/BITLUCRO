@@ -8,10 +8,14 @@ import sys
 import io
 import json
 import time
+import socket
 import threading
 from datetime import datetime
 import requests
 from flask import Flask, jsonify, render_template_string, request, Response
+
+# Timeout global seguro para evitar travamento de conexões HTTP (máx 10s)
+socket.setdefaulttimeout(10)
 
 # Configuração de encoding para UTF-8 seguro
 if sys.platform == 'win32':
@@ -49,7 +53,8 @@ def background_trading_loop():
         try:
             engine.run_cycle()
             status = engine.state.get("last_macro_status", "Ativo")
-            add_log(f"Ciclo executado. Macro: {status} | Saldo: R$ {engine.state['cash_balance_brl']:.2f}")
+            now_str = datetime.now().strftime("%H:%M:%S")
+            add_log(f"Ciclo executado [{now_str}]. Macro: {status} | Saldo: R$ {engine.state['cash_balance_brl']:.2f}")
         except Exception as e:
             add_log(f"Alerta no ciclo: {str(e)}")
         time.sleep(25)
@@ -64,6 +69,7 @@ def fast_pnl_tracker_loop():
         try:
             if engine.state.get("open_positions"):
                 engine.update_open_positions_pnl()
+            engine.state["last_update"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         except Exception:
             pass
         time.sleep(3)
@@ -686,7 +692,12 @@ HTML_DASHBOARD = """
             <i class="fa-solid fa-coins text-emerald-400"></i>
             <h2 class="text-sm font-bold text-white tracking-wide">Custódia Ativa na MEXC (Posição Aberta em Tempo Real)</h2>
           </div>
-          <span class="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 font-bold" id="mexcPosBadge">Monitorando Ticker (1s)</span>
+          <div class="flex items-center gap-2">
+            <button onclick="mexcManualSell()" id="btnMexcManualSell" class="px-2.5 py-1 bg-rose-500/15 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+              <i class="fa-solid fa-bolt text-rose-400"></i> Vender a Mercado Agora
+            </button>
+            <span class="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 font-bold" id="mexcPosBadge">Monitorando Ticker (1s)</span>
+          </div>
         </div>
 
         <!-- Tabela Desktop MEXC -->
@@ -1778,6 +1789,26 @@ HTML_DASHBOARD = """
       } catch (err) {}
     }
 
+    async function mexcManualSell() {
+      if (!confirm("Deseja realmente liquidar a mercado agora a posição na MEXC com o lucro atual?")) return;
+      const btn = document.getElementById('btnMexcManualSell');
+      if (btn) btn.innerText = "Executando venda...";
+      try {
+        const res = await fetch('/api/mexc/close_market', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          alert("🎉 Sucesso! Ordem de venda a mercado executada na MEXC.");
+          updateMexcDashboard();
+        } else {
+          alert("Aviso: " + (data.error || "Não foi possível concluir a ordem."));
+        }
+      } catch (e) {
+        alert("Erro de comunicação: " + e.message);
+      } finally {
+        if (btn) btn.innerHTML = '<i class="fa-solid fa-bolt text-rose-400"></i> Vender a Mercado Agora';
+      }
+    }
+
     setInterval(updateDashboard, 4000);
     setInterval(updateLiveTicker, 1000);
     setInterval(updateMexcDashboard, 2500);
@@ -1818,6 +1849,11 @@ def get_mexc_state():
     state = mexc_bot.state.copy()
     state["logs"] = mexc_bot.logs
     return jsonify(state)
+
+@app.route('/api/mexc/close_market', methods=['POST'])
+def mexc_close_market():
+    res = mexc_bot.manual_market_sell()
+    return jsonify(res)
 
 @app.route('/api/historical')
 def get_historical():

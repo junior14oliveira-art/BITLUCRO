@@ -26,3 +26,10 @@
 - **Lucro Líquido Real:** +R$ 0.18 (Taxas: R$ 0.030)
 - **Banca Atualizada:** R$ 50.19
 ---
+
+### Trade SPOT (15m) - 27/09 17:37:35
+- **Ativo:** QNTUSDT
+- **Compra:** 161.59 ➔ **Venda:** 190.08 (+17.63%)
+- **Lucro Líquido Real:** +R$ 8.73 (Taxas: R$ 0.163)
+- **Banca Atualizada:** R$ 1000.25
+---
