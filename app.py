@@ -1835,6 +1835,16 @@ def home():
 
 @app.route('/api/state')
 def get_state():
+    now = time.time()
+    if not hasattr(engine, '_last_pnl_time') or (now - engine._last_pnl_time >= 3.0):
+        engine._last_pnl_time = now
+        try:
+            if engine.state.get("open_positions"):
+                engine.update_open_positions_pnl()
+            engine.state["last_update"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        except Exception:
+            pass
+
     state = engine.state.copy()
     state["activity_logs"] = activity_logs
     if hasattr(engine, 'brain'):

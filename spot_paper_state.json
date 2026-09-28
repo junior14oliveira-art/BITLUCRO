@@ -2,9 +2,9 @@
   "mode": "PAPER_TRADING_SPOT",
   "initial_capital_brl": 1000.0,
   "cash_balance_brl": 928.7672974812798,
-  "total_equity_brl": 1067.63,
+  "total_equity_brl": 1007.91,
   "accumulated_profit_brl": 8.97,
-  "profit_pct": 6.76,
+  "profit_pct": 0.79,
   "open_positions": [
     {
       "symbol": "BTCBRL",
@@ -14,8 +14,8 @@
       "target_price": 448065.6,
       "stake_brl": 10.0,
       "buy_fee_brl": 0.015,
-      "current_price": 439699.0,
-      "current_pnl_pct": 0.1,
+      "current_price": 435394.0,
+      "current_pnl_pct": -0.88,
       "reason": "RSI 1H (60.6) + Alinhamento EMA9/21 (ALTA ↗)"
     },
     {
@@ -27,8 +27,8 @@
       "target_price": 86213.6538,
       "stake_brl": 10.0,
       "buy_fee_brl": 0.015,
-      "current_price": 84591.1,
-      "current_pnl_pct": 0.08,
+      "current_price": 83409.41,
+      "current_pnl_pct": -1.32,
       "reason": "[1H] Swing Pullback 1H (RSI 68.3 + EMA9/21 ALTA ↗)"
     },
     {
@@ -40,8 +40,8 @@
       "target_price": 2757.2232,
       "stake_brl": 10.0,
       "buy_fee_brl": 0.015,
-      "current_price": 2690.32,
-      "current_pnl_pct": -0.47,
+      "current_price": 2684.05,
+      "current_pnl_pct": -0.71,
       "ml_score": 66.7,
       "reason": "[1H] Swing Pullback 1H (RSI 62.6 + EMA9/21 ALTA ↗) (ML: 66.7%)"
     },
@@ -54,8 +54,8 @@
       "target_price": 1637.7834,
       "stake_brl": 50.0,
       "buy_fee_brl": 0.075,
-      "current_price": 1605.67,
-      "current_pnl_pct": 0.0,
+      "current_price": 1587.36,
+      "current_pnl_pct": -1.14,
       "ml_score": 66.7,
       "reason": "[1H] Swing Pullback 1H (RSI 32.8 + EMA9/21 BAIXA ↘) (ML: 66.7%)"
     }
@@ -92,7 +92,7 @@
   "loss_count": 0,
   "last_macro_status": "BULL 🟢 (BTC: $84,591 > SMA200: $71,110)",
   "current_thought": "[17:38:05] Mercado operando com tendência macro de alta consolidada (BTC acima da SMA 200). Custódia ativa em 4 par(es): BTCBRL (+0.10%), BTCUSDT (+0.08%), ETHUSDT (-0.47%), ZECUSDT (+0.00%) aguardando alvo programado de +2.0%. Escaneando confluência multi-tempo (15m, 1h e 4h) sem pressa, protegendo o patrimônio.",
-  "last_update": "27/09/2026 17:38:05",
+  "last_update": "28/09/2026 09:49:27",
   "is_paused": false,
   "api_latency_ms": 10168,
   "super_skill": {
