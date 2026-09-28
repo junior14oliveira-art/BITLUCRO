@@ -2,7 +2,7 @@
   "mode": "MEXC_REAL_SPOT",
   "initial_usdt": 2.24,
   "cash_balance_usdt": 0.0557,
-  "total_equity_usdt": 2.25,
+  "total_equity_usdt": 2.19,
   "accumulated_profit_usdt": 0.0,
   "profit_pct": 0.0,
   "wins": 0,
@@ -12,13 +12,18 @@
     "target_price": 123.8076,
     "invested_usdt": 2.19,
     "entry_time": "12:05:01",
-    "current_price": 121.72,
-    "current_pnl_pct": 0.28
+    "current_price": 118.42,
+    "current_pnl_pct": -2.44
   },
   "closed_trades": [],
-  "current_thought": "[12:33:32] 🧠 IA Estudando Mercado: Em custódia SOLUSDT (+0.28% PnL | $121.7200 ➔ Alvo $123.8076). BTC $84599 (RSI 39) | ETH $2690 (RSI 31) | Acumulação/Neutro.",
-  "last_update": "27/09/2026 12:33:33",
+  "current_thought": "[08:53:46] 🧠 IA Estudando Mercado: Em custódia SOLUSDT (-2.44% PnL | $118.4200 ➔ Alvo $123.8076). BTC $82977 (RSI 56) | ETH $2663 (RSI 66) | Tendência Altista.",
+  "last_update": "28/09/2026 08:53:50",
   "logs": [
+    "[08:53:50] 📈 Custódia SOLUSDT: $118.4200 (-2.44%). Alvo (+2.0%): $123.8076. Faltam +$5.3876.",
+    "[08:52:30] 📈 Custódia SOLUSDT: $118.5200 (-2.36%). Alvo (+2.0%): $123.8076. Faltam +$5.2876.",
+    "[08:52:16] 📈 Custódia SOLUSDT: $118.4900 (-2.38%). Alvo (+2.0%): $123.8076. Faltam +$5.3176.",
+    "[08:50:03] 📈 Custódia SOLUSDT: $118.5300 (-2.35%). Alvo (+2.0%): $123.8076. Faltam +$5.2776.",
+    "[08:48:55] 📈 Custódia SOLUSDT: $118.5500 (-2.33%). Alvo (+2.0%): $123.8076. Faltam +$5.2576.",
     "[12:33:33] 🧠 Estudo Mercado IA: BTC $84599 (RSI 39.2) | ETH $2690 (RSI 30.8) | Macro: Acumulação/Neutro.",
     "[12:33:21] 📈 Custódia SOLUSDT: $121.7700 (+0.32%). Alvo (+2.0%): $123.8076. Faltam +$2.0376.",
     "[12:33:13] 📈 Custódia SOLUSDT: $121.7700 (+0.32%). Alvo (+2.0%): $123.8076. Faltam +$2.0376."

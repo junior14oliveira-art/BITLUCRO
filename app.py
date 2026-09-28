@@ -77,16 +77,17 @@ def fast_pnl_tracker_loop():
 pnl_thread = threading.Thread(target=fast_pnl_tracker_loop, daemon=True)
 pnl_thread.start()
 
-# Keep-Alive Automático para evitar que o Render hiberne (a cada 10 minutos)
+# Keep-Alive Automático para evitar que o Render hiberne (a cada 5 minutos)
 def keep_alive_self_ping():
-    time.sleep(60)
+    time.sleep(30)
     render_url = os.environ.get("RENDER_EXTERNAL_URL", "https://bitlucro-spot-bot.onrender.com")
     while True:
         try:
             requests.get(f"{render_url}/health", timeout=10)
+            requests.get(f"{render_url}/api/mexc/state", timeout=10)
         except Exception:
             pass
-        time.sleep(600)
+        time.sleep(300)
 
 ping_thread = threading.Thread(target=keep_alive_self_ping, daemon=True)
 ping_thread.start()
@@ -1846,9 +1847,41 @@ def get_skill():
 
 @app.route('/api/mexc/state')
 def get_mexc_state():
+    now = time.time()
+    if not hasattr(mexc_bot, '_last_step_time') or (now - mexc_bot._last_step_time >= 2.0):
+        mexc_bot._last_step_time = now
+        try:
+            mexc_bot.step()
+        except Exception:
+            pass
     state = mexc_bot.state.copy()
     state["logs"] = mexc_bot.logs
     return jsonify(state)
+
+@app.route('/api/mexc/debug')
+def mexc_debug():
+    import traceback
+    try:
+        sol_p = mexc_bot.get_live_price("SOLUSDT")
+        usdt = mexc_bot.get_usdt_balance()
+        sol_bal = mexc_bot.get_asset_balance("SOL")
+        mexc_bot.step()
+        return jsonify({
+            "status": "success",
+            "sol_p": sol_p,
+            "usdt_balance": usdt,
+            "sol_balance": sol_bal,
+            "last_update": mexc_bot.state.get("last_update"),
+            "thought": mexc_bot.state.get("current_thought"),
+            "api_key_set": bool(mexc_bot.api_key),
+            "api_secret_set": bool(mexc_bot.api_secret)
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        })
 
 @app.route('/api/mexc/close_market', methods=['POST'])
 def mexc_close_market():

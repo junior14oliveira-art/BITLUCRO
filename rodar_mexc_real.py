@@ -129,7 +129,7 @@ class MEXCTrader:
 
     def get_usdt_balance(self):
         try:
-            params = {"timestamp": int(time.time() * 1000)}
+            params = {"timestamp": int(time.time() * 1000), "recvWindow": 60000}
             signed = self._sign(params)
             r = requests.get(f"{MEXC_API}/account?{signed}", headers=self._headers(), timeout=5)
             if r.status_code == 200:
@@ -142,7 +142,7 @@ class MEXCTrader:
 
     def get_asset_balance(self, asset):
         try:
-            params = {"timestamp": int(time.time() * 1000)}
+            params = {"timestamp": int(time.time() * 1000), "recvWindow": 60000}
             signed = self._sign(params)
             r = requests.get(f"{MEXC_API}/account?{signed}", headers=self._headers(), timeout=5)
             if r.status_code == 200:
@@ -188,7 +188,8 @@ class MEXCTrader:
                 "side": "BUY",
                 "type": "MARKET",
                 "quoteOrderQty": round(float(usdt_amount), 2),
-                "timestamp": int(time.time() * 1000)
+                "timestamp": int(time.time() * 1000),
+                "recvWindow": 60000
             }
             signed = self._sign(params)
             r = requests.post(f"{MEXC_API}/order?{signed}", headers=self._headers(), timeout=5)
@@ -237,7 +238,8 @@ class MEXCTrader:
                     "side": "SELL",
                     "type": "MARKET",
                     "quantity": qty_str,
-                    "timestamp": int(time.time() * 1000)
+                    "timestamp": int(time.time() * 1000),
+                    "recvWindow": 60000
                 }
                 signed = self._sign(params)
                 r = requests.post(f"{MEXC_API}/order?{signed}", headers=self._headers(), timeout=5)
@@ -331,20 +333,27 @@ class MEXCTrader:
             sym = pos["symbol"]
             entry_p = pos["entry_price"]
             target_p = pos["target_price"]
-            cur_p = self.get_live_price(sym)
+            cur_p = self.get_live_price(sym) or pos.get("current_price") or entry_p
 
             if cur_p:
                 pnl = ((cur_p - entry_p) / entry_p) * 100
                 pos["current_price"] = cur_p
                 pos["current_pnl_pct"] = round(pnl, 2)
                 cur_val = pos["invested_usdt"] * (1 + (pnl / 100.0))
-                free_cash = self.get_usdt_balance()
-                self.state["cash_balance_usdt"] = round(free_cash, 4)
+
+                now_ts = time.time()
+                # Atualiza saldo livre de USDT a cada 60s para economizar requisições autenticadas
+                if not hasattr(self, "_last_cash_check") or (now_ts - self._last_cash_check > 60):
+                    self._last_cash_check = now_ts
+                    free_cash = self.get_usdt_balance()
+                    if free_cash > 0:
+                        self.state["cash_balance_usdt"] = round(free_cash, 4)
+
+                free_cash = self.state.get("cash_balance_usdt", 0.0556)
                 self.state["total_equity_usdt"] = round(free_cash + cur_val, 2)
 
-                # Varredura macro periódica a cada 25s (BTC e ETH como termômetro de mercado)
-                now_ts = time.time()
-                if not hasattr(self, "_last_macro_scan") or (now_ts - self._last_macro_scan > 25):
+                # Varredura macro periódica a cada 60s (BTC e ETH como termômetro de mercado)
+                if not hasattr(self, "_last_macro_scan") or (now_ts - self._last_macro_scan > 60):
                     self._last_macro_scan = now_ts
                     try:
                         self._btc_p = self.get_live_price("BTCUSDT") or 65000.0
@@ -354,7 +363,7 @@ class MEXCTrader:
                     except Exception:
                         pass
 
-                btc_p = getattr(self, "_btc_p", 65500.0)
+                btc_p = getattr(self, "_btc_p", 84500.0)
                 btc_rsi = getattr(self, "_btc_rsi", 52.0)
                 eth_p = getattr(self, "_eth_p", 2640.0)
                 eth_rsi = getattr(self, "_eth_rsi", 49.0)
